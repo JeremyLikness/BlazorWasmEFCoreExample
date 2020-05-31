@@ -1,0 +1,28 @@
+﻿@using ContactsApp.Model;
+
+<table>
+    <ContactListHeader />
+    @foreach (var contact in Contacts)
+    {
+        <ContactListRow DeleteRequestId="DeleteRequestId"
+                        DeleteRequested="id => DeleteRequestId = id"
+                        CurrentContact="@contact" 
+                        DeleteContact="@DeleteContact"/>
+    }
+</table>
+
+@code {
+    /// <summary>
+    /// The list of <see cref="Contact"/> items to show.
+    /// </summary>
+    [Parameter]
+    public ICollection<Contact> Contacts { get; set; }
+
+    public int DeleteRequestId { get; set; }
+
+    /// <summary>
+    /// Pass in a delegate to handle deleting the <see cref="Contact"/>.
+    /// </summary>
+    [Parameter]
+    public EventCallback<Contact> DeleteContact { get; set; }
+}

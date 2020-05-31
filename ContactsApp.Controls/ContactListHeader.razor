@@ -1,0 +1,30 @@
+﻿@inherits GridControlsBase
+@using ContactsApp.Model 
+
+<tr>
+    <th>&nbsp;</th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.Name))">Name <SortIndicator Column="@(ContactFilterColumns.Name)" /></th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.Phone))">📞 Phone <SortIndicator Column="@(ContactFilterColumns.Phone)" /></th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.Street))">🏠 Street Address <SortIndicator Column="@(ContactFilterColumns.Street)" /></th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.City))">City <SortIndicator Column="@(ContactFilterColumns.City)" /></th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.State))">State <SortIndicator Column="@(ContactFilterColumns.State)" /></th>
+    <th @onclick="@(()=>Toggle(ContactFilterColumns.ZipCode))">ZipCode <SortIndicator Column="@(ContactFilterColumns.ZipCode)" /></th>
+</tr>
+
+@code {
+    /// <summary>
+    /// Either starting a new sort or toggling ascending/descending for the current.
+    /// </summary>
+    /// <param name="col">The <see cref="ContactFilterColumns"/> being toggled.</param>
+    public void Toggle(ContactFilterColumns col)
+    {
+        if (Controls.SortColumn == col)
+        {
+            Controls.SortAscending = !Controls.SortAscending;
+        }
+        else
+        {
+            Controls.SortColumn = col;          
+        }
+    }
+}

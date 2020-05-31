@@ -1,0 +1,18 @@
+﻿@inherits GridControlsBase 
+
+@if (Controls.ShowFirstNameFirst)
+{
+    <button class="btn btn-primary" @onclick="()=>Controls.ShowFirstNameFirst=false">Show Last Name, First Name</button>
+}
+else
+{
+    <button class="btn btn-primary" @onclick="()=>Controls.ShowFirstNameFirst=true">Show First Name, Last Name</button>
+}
+&nbsp;
+@code {
+    /// <summary>
+    /// Only interested in events that change name order.
+    /// </summary>
+    protected override Predicate<string> PropertyFilter =>
+        str => str == nameof(Controls.ShowFirstNameFirst);
+}

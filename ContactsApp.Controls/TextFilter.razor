@@ -1,0 +1,146 @@
+﻿@using System.Timers
+@using ContactsApp.Model 
+
+@inherits GridControlsBase
+
+Filter by:
+<input type="text" autofocus @bind-value="FilterText" @bind-value:event="oninput" />
+<button class="btn btn-danger" @onclick="@(() => FilterText = string.Empty)">Clear</button>
+Filter on: <select @bind="SelectedColumn">
+    @foreach (ContactFilterColumns column in (ContactFilterColumns[])Enum.GetValues(typeof(ContactFilterColumns)))
+    {
+        <option @attributes="Selected(column)" value="@((int)column)">@(column.ToString())</option>
+    }
+</select>
+
+@code {
+    /// <summary>
+    /// Wait period in (ms) after the user stops typing.
+    /// </summary>
+    const int DebounceMs = 300;
+
+    /// <summary>
+    /// Proper disposal of timers.
+    /// </summary>
+    private bool disposedValue = false;
+
+    /// <summary>
+    /// Timer for debounce.
+    /// </summary>
+    Timer timer;
+
+    /// <summary>
+    /// Only interested in filter-related changes.
+    /// </summary>
+    protected override Predicate<string> PropertyFilter =>
+    str => str == nameof(Controls.FilterColumn) || str == nameof(Controls.FilterText);
+
+    /// <summary>
+    /// When ready.
+    /// </summary>
+    protected override void OnInitialized()
+    {
+        // grab filter
+        filterText = Controls.FilterText;
+
+        // grab column to filter on
+        selectedColumn = (int)(Controls.FilterColumn);
+
+        base.OnInitialized();
+    }
+
+    /// <summary>
+    /// Sets selected attribute.
+    /// </summary>
+    /// <param name="column">The <see cref="ContactFilterColumns"/> being evaluated.</param>
+    /// <returns>The proper attribute to select the option.</returns>
+    private IEnumerable<KeyValuePair<string, object>> Selected(ContactFilterColumns column)
+    {
+        if ((int)column == selectedColumn)
+        {
+            return new[] { new KeyValuePair<string, object>("selected", (object)"selected") };
+        }
+        return Enumerable.Empty<KeyValuePair<string, object>>();
+    }
+
+    private int selectedColumn;
+
+    /// <summary>
+    /// Column to filter on.
+    /// </summary>
+    public int SelectedColumn
+    {
+        get => selectedColumn;
+        set
+        {
+            if (value != selectedColumn)
+            {
+                selectedColumn = value;
+                filterText = string.Empty;
+                Controls.FilterColumn = (ContactFilterColumns)selectedColumn;
+            }
+        }
+    }
+
+    private string filterText;
+
+    /// <summary>
+    /// Text to filter on.
+    /// </summary>
+    public string FilterText
+    {
+        get => filterText;
+        set
+        {
+            if (value != filterText)
+            {
+                filterText = value;
+                // more text means restart the debounce timer
+                if (timer != null)
+                {
+                    timer.Dispose();
+                }
+                timer = new Timer(DebounceMs);
+                timer.Elapsed += NotifyTimerElapsed;
+                timer.Enabled = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Fired after debounce time.
+    /// </summary>
+    /// <param name="sender">Timer.</param>
+    /// <param name="e">Event args.</param>
+    private void NotifyTimerElapsed(object sender, ElapsedEventArgs e)
+    {
+        timer.Dispose();
+        timer = null;
+        if (Controls.FilterText != filterText)
+        {
+            // notify the controls
+            Controls.FilterText = filterText.Trim();
+        }
+    }
+
+    /// <summary>
+    /// Disposable pattern - override to dispose any ticking timers.
+    /// </summary>
+    /// <param name="disposing"><c>True</c> when disposing.</param>
+    protected override void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                if (timer != null)
+                {
+                    timer.Dispose();
+                    timer = null;
+                }
+                disposedValue = true;
+            }
+        }
+        base.Dispose(disposing);
+    }
+}

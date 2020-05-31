@@ -1,0 +1,16 @@
+﻿@inject GridControls Controls
+
+<p>Page @Controls.PageHelper.Page of @Controls.PageHelper.PageCount: showing @Controls.PageHelper.PageItems of 
+    @Controls.PageHelper.TotalItemCount items. 
+    <button disabled="@(Controls.Loading || Controls.PageHelper.Page < 2)" class="btn btn-primary" 
+            @onclick="()=>NavigateToPage(Controls.PageHelper.Page-1)">Previous</button>
+    <button disabled="@(Controls.Loading || Controls.PageHelper.Page >= Controls.PageHelper.PageCount)" class="btn btn-primary" 
+            @onclick="()=>NavigateToPage(Controls.PageHelper.Page+1)">Next</button>
+</p>
+@code {
+    /// <summary>
+    /// Delegate for navigation to a specific page.
+    /// </summary>
+    [Parameter]
+    public Action<int> NavigateToPage { get; set; }
+}

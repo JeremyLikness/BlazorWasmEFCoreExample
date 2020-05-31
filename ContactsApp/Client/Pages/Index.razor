@@ -1,0 +1,30 @@
+﻿@page "/"
+@page "/{Page:int}"
+
+@using Microsoft.AspNetCore.Authorization 
+@using ContactsApp.BaseRepository
+@using ContactsApp.Model
+
+@attribute [Authorize]
+
+<ListControl Page="Page"
+             FetchControlsAsync="(repo, contacts) => FetchAsync(repo, contacts)" />
+@code {
+    /// <summary>
+    /// Allow route-based navigation.
+    /// </summary>
+    [Parameter]
+    public int Page { get; set; }
+
+    /// <summary>
+    /// Pass in the actual work so this can be reused between client and server
+    /// </summary>
+    /// <param name="repo">The <see cref="IBasicRepository{Contact}"/> to use.</param>
+    /// <param name="contacts">How to handle the returned <see cref="ICollection{Contact}"/>.</param>
+    /// <returns>A <see cref="Task"/></returns>
+    public async Task FetchAsync(IBasicRepository<Contact> repo,
+        Action<ICollection<Contact>> contacts)
+    {
+        contacts((await repo.GetListAsync()).ToList());
+    }
+}

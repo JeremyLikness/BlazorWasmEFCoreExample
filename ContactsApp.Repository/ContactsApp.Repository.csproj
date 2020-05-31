@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ContactsApp.BaseRepository\ContactsApp.BaseRepository.csproj" />
+    <ProjectReference Include="..\ContactsApp.DataAccess\ContactsApp.DataAccess.csproj" />
+  </ItemGroup>
+
+</Project>

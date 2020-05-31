@@ -1,0 +1,194 @@
+﻿@using ContactsApp.BaseRepository; 
+@using ContactsApp.Model;
+@using System.Security.Claims; 
+
+@inject ClaimsPrincipal User
+@inject IBasicRepository<Contact> Repo
+@inject NavigationManager Nav
+
+@inherits GridControlsBase
+
+<h1>Contacts</h1>
+
+<NameToggle />
+<TextFilter />
+<br />
+<Pager NavigateToPage="@((page)=>NavigateTo(page))" />
+@if (Contacts == null)
+{
+    <div class="alert alert-info">Loading ...</div>
+}
+else
+{
+    @if (Contacts.Count == 0)
+    {
+        <div class="alert alert-warning">No contacts found.</div>
+    }
+    else
+    {
+        <ContactList Contacts="@Contacts" DeleteContact="DeleteContactAsync" />
+    }
+}
+
+@code {
+    /// <summary>
+    /// The <see cref="ICollection{Contact}"/> to expose on the page.
+    /// </summary>
+    public ICollection<Contact> Contacts { get; set; }
+
+    private bool _loaded; // track loading: page change or grid controls
+    private int _lastPage;
+
+    /// <summary>
+    /// Allow route-based navigation.
+    /// </summary>
+    [Parameter]
+    public int Page
+    {
+        get => Controls.PageHelper.Page;
+        set
+        {
+            Controls.PageHelper.Page = value;
+        }
+    }
+
+    /// <summary>
+    /// This delegate requests the collection refresh so it can be handled
+    /// appropriately on client vs. server.
+    /// </summary>
+    [Parameter]
+    public Func<IBasicRepository<Contact>, Action<ICollection<Contact>>, Task> FetchControlsAsync { get; set; }
+
+    /// <summary>
+    /// Initial load.
+    /// </summary>
+    /// <param name="firstRender"><c>True</c> on first render.</param>
+    /// <returns>A <see cref="Task"/>.</returns>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await ReloadAsync();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    /// <summary>
+    /// Navigation occurred.
+    /// </summary>
+    /// <returns>A <see cref="Task"/>.</returns>
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Page != _lastPage)
+        {
+            _lastPage = Page;
+            _loaded = false;
+            // refresh based on new page
+            await ReloadAsync();
+        }
+        await base.OnParametersSetAsync();
+    }
+
+    /// <summary>
+    /// Loads the current page.
+    /// </summary>
+    /// <returns>A <see cref="Task"/>.</returns>
+    private async Task ReloadAsync()
+    {
+        // already in progress, don't duplicate
+        if (Controls.Loading)
+        {
+            return;
+        }
+
+        // bad page, get on the right page
+        if (Page < 1)
+        {
+            NavigateTo(1);
+            return;
+        }
+
+        // bad page, pop to top
+        if (Page > Controls.PageHelper.PageCount && Controls.PageHelper.PageCount > 0)
+        {
+            NavigateTo(Controls.PageHelper.PageCount);
+            return;
+        }
+
+        if (_loaded)
+        {
+            return;
+        }
+
+        Contacts = null;
+
+        // destroy row controls
+        await InvokeAsync(() => StateHasChanged());
+
+        // notify that we're doing work
+        Controls.Loading = true;
+
+        // get total count
+        await FetchControlsAsync(Repo, result => Contacts = result);
+        
+        // now we're done
+        Controls.Loading = false;
+
+        _loaded = true;
+
+        // let Blazor know we've got updates
+        await InvokeAsync(() => StateHasChanged());
+    }
+
+    /// <summary>
+    /// Logic to delete the <see cref="Contact"/>.
+    /// </summary>
+    /// <param name="contact">The <see cref="Contact"/> to delete.</param>
+    /// <returns>A <see cref="Task"/>.</returns>
+    public async Task DeleteContactAsync(Contact contact)
+    {
+        Controls.Loading = true;
+        await Repo.DeleteAsync(contact.Id, User);
+        Controls.Loading = false;
+        _loaded = false;
+        await ReloadAsync();
+    }
+
+    /// <summary>
+    /// Take me to a page.
+    /// </summary>
+    /// <param name="page">The page I'm interested in.</param>
+    public void NavigateTo(int page)
+    {
+        Nav.NavigateTo($"/{page}");
+    }
+
+    /// <summary>
+    /// Suppress base class "state has changed".
+    /// </summary>
+    protected override Predicate<string> PropertyFilter => str => false;
+
+    /// <summary>
+    /// Re-evalute when the controls are updated.
+    /// </summary>
+    /// <param name="sender">The <see cref="GridControls"/> instance.</param>
+    /// <param name="e">The property that changed.</param>
+    protected override async Task OnGridChangedAsync(string property)
+    {
+        if (property == nameof(Controls.Loading))
+        {
+            return;
+        }
+
+        // reset to beginning. The filter will run (pages may have changed, etc.)
+        if (Page != 1)
+        {
+            NavigateTo(1);
+            return;
+        }
+
+        _loaded = false;
+        // just refresh
+        await ReloadAsync();
+    }
+}
