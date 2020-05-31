@@ -59,9 +59,13 @@ namespace ContactsApp.DataAccess
                             DateTimeOffset.UtcNow;
                     }
 
+                    Contact dbVal = null;
+
                     // set modified information for modified item
                     if (item.State == EntityState.Modified)
                     {
+                        var db = await item.GetDatabaseValuesAsync();
+                        dbVal = db.ToObject() as Contact;
                         item.Property<string>(ContactContext.ModifiedBy).CurrentValue =
                             user;
                         item.Property<DateTimeOffset>(ContactContext.ModifiedOn).CurrentValue =
@@ -69,7 +73,7 @@ namespace ContactsApp.DataAccess
                     }
 
                     // parse the changes
-                    var changes = new PropertyChanges<Contact>(item);
+                    var changes = new PropertyChanges<Contact>(item, dbVal);
                     var audit = new ContactAudit
                     {
                         ContactId = item.Entity.Id,

@@ -7,7 +7,7 @@ namespace ContactsApp.DataAccess
     /// Class facilitates serialization of changes for audits.
     /// </summary>
     /// <typeparam name="TEntity">The <see cref="TEntity"/> type to audit.</typeparam>
-    public class PropertyChanges<TEntity> where TEntity: class
+    public class PropertyChanges<TEntity> where TEntity : class
     {
         /// <summary>
         /// The type for serialization.
@@ -23,12 +23,14 @@ namespace ContactsApp.DataAccess
         /// Changed entity.
         /// </summary>
         public TEntity New { get; set; }
-        
+
         /// <summary>
         /// Parses the tracker to build the snapshots.
         /// </summary>
         /// <param name="entityEntry">The tracked entity.</param>
-        public PropertyChanges(EntityEntry<TEntity> entityEntry)
+        /// <param name="dbVal">The database snapshot.</param>
+        public PropertyChanges(EntityEntry<TEntity> entityEntry,
+            TEntity dbVal = default)
         {
             if (entityEntry.State == EntityState.Added ||
                 entityEntry.State == EntityState.Modified)
@@ -38,8 +40,9 @@ namespace ContactsApp.DataAccess
             if (entityEntry.State == EntityState.Deleted ||
                 entityEntry.State == EntityState.Modified)
             {
-                Original = entityEntry.OriginalValues.ToObject() as TEntity;
-            }
+                Original = dbVal ??
+                    entityEntry.OriginalValues.ToObject() as TEntity;
+            }            
         }
     }
 }
