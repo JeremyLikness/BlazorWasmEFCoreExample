@@ -1,35 +1,42 @@
 ﻿using ContactsApp.BaseRepository;
-using ContactsApp.Model;
 using ContactsApp.DataAccess;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace ContactsApp.Repository
 {
     /// <summary>
-    /// Simple wrapper around a <see cref="ContactContext"/>.
+    /// Simple wrapper around a <see cref="IBasicRepository{TEntity}"/>.
+    /// Persists the repo that persists the context.
     /// </summary>
-    public class UnitOfWork : IUnitOfWorkContext<ContactContext>
-
+    public class UnitOfWork<TContext, TEntity> : 
+        IUnitOfWork<TEntity>
+        where TContext: DbContext, ISupportUser
     {
+        /// <summary>
+        /// The repo to work with.
+        /// </summary>
+        private IRepository<TEntity, TContext> _repo;
+
+        /// <summary>
+        /// Simple repo reference.
+        /// </summary>
+        public IBasicRepository<TEntity> Repo
+        {
+            get => _repo;            
+        }
+
         /// <summary>
         /// Inject the context.
         /// </summary>
         /// <param name="context">The <see cref="ContactContext"/> to wrap.</param>
-        public UnitOfWork(ContactContext context)
+        public UnitOfWork(
+            IRepository<TEntity, TContext> repo, DbContextFactory<TContext> factory)
         {
-            Context = context;
-        }
-
-        /// <summary>
-        /// <c>True</c> when disposed.
-        /// </summary>
-        public bool Disposed => Context == null;
-
-        /// <summary>
-        /// The wrapped <see cref="ContactContext"/>.
-        /// </summary>
-        public ContactContext Context { get; private set; }
+            repo.PersistedContext = factory.CreateDbContext();
+            _repo = repo;
+        }        
 
         /// <summary>
         /// Commit changes.
@@ -39,19 +46,19 @@ namespace ContactsApp.Repository
         {
             try
             {
-                await Context.SaveChangesAsync();
+                await _repo.PersistedContext.SaveChangesAsync();                    
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 // build the helper exception from the exception data
-                var newex = new ContactConcurrencyException(
-                    (Contact)ex.Entries[0].Entity, ex);
+                var newex = new RepoConcurrencyException<TEntity>(
+                    (TEntity)ex.Entries[0].Entity, ex);
                 var dbValues = ex.Entries[0].GetDatabaseValues();
 
                 // was deleted
                 if (dbValues == null)
                 {
-                    newex.DbContact = null;
+                    newex.DbEntity = default;
                 }
                 else
                 {
@@ -59,14 +66,12 @@ namespace ContactsApp.Repository
                     newex.RowVersion = dbValues
                         .GetValue<byte[]>(ContactContext.RowVersion);
                     // grab the database version
-                    newex.DbContact = (Contact)dbValues.ToObject();
+                    newex.DbEntity = (TEntity)dbValues.ToObject();
                     // move to original so second submit works (unless there is another concurrent edit)
                     ex.Entries[0].OriginalValues.SetValues(dbValues);
                 }
                 throw newex;
             }
-            // only get here if no exceptions
-            Dispose();
         }
 
         /// <summary>
@@ -74,10 +79,22 @@ namespace ContactsApp.Repository
         /// </summary>
         public void Dispose()
         {
-            if (Context != null)
+            if (_repo != null)
             {
-                Context.Dispose();
-                Context = null;
+                _repo.Dispose();
+                _repo = null;
+            }
+        }
+
+        /// <summary>
+        /// Sets the <see cref="ClaimsPrincipal"/> for audits.
+        /// </summary>
+        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
+        public void SetUser(ClaimsPrincipal user)
+        {
+            if (_repo.PersistedContext != null)
+            {
+                _repo.PersistedContext.User = user;
             }
         }
     }

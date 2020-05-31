@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using ContactsApp.Model;
 
@@ -10,6 +11,13 @@ namespace ContactsApp.DataAccess
     /// </summary>
     public class SeedContacts
     {
+        private readonly DbContextFactory<ContactContext> _factory;
+
+        public SeedContacts(DbContextFactory<ContactContext> factory)
+        {
+            _factory = factory;
+        }
+
         /// <summary>
         /// Use these to make names.
         /// </summary>
@@ -205,7 +213,31 @@ namespace ContactsApp.DataAccess
             return contact;
         }
 
-        public async Task SeedDatabaseWithContactCountOfAsync(ContactContext context, int totalCount)
+        /// <summary>
+        /// Check if database exists. If not, create it and seed new data.
+        /// </summary>
+        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
+        /// <returns>A <see cref="Task"/>.</returns>
+        public async Task CheckAndSeedDatabaseAsync(ClaimsPrincipal user)
+        {
+            using (var context = _factory.CreateDbContext())
+            {
+                context.User = user;
+                var created = await context.Database.EnsureCreatedAsync();
+                if (created)
+                {
+                    await SeedDatabaseWithContactCountOfAsync(context, 500);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Generate random <see cref="Contact"/> instances and batch insert.
+        /// </summary>
+        /// <param name="context">The <see cref="ContactContext"/> to use.</param>
+        /// <param name="totalCount">The count of contacts to generate.</param>
+        /// <returns>A <see cref="Task"/>.</returns>
+        private async Task SeedDatabaseWithContactCountOfAsync(ContactContext context, int totalCount)
         {
             var count = 0;
             var currentCycle = 0;

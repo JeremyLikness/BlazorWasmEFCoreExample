@@ -182,7 +182,7 @@ else
         NotFound = false;
         Contact = null;
         _loading = true;
-        Contact = await Repo.LoadAsync(ContactId);
+        Contact = await Repo.LoadAsync(ContactId, null);
         _loading = false;
         _loaded = true;
         if (Contact == null)

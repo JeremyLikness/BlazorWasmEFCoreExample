@@ -22,30 +22,19 @@ namespace ContactsApp.Client.Data
         }
 
         /// <summary>
-        /// Simple cast from <see cref="IUnitOfWork"/> to <see cref="WasmUnitOfWork"/>
-        /// implementation.
-        /// </summary>
-        /// <param name="unitOfWork">The <see cref="IUnitOfWork"/> to cast.</param>
-        /// <returns>The <see cref="WasmUnitOfWork"/>.</returns>
-        public static WasmUnitOfWork Resolve(this IUnitOfWork unitOfWork)
-        {
-            return unitOfWork as WasmUnitOfWork;
-        }
-
-        /// <summary>
-        /// Helper to transfer concurrency information from the work unit
+        /// Helper to transfer concurrency information from the repo
         /// to the data object.
         /// </summary>
         /// <param name="contact">The <see cref="Contact"/> being resolved.</param>
-        /// <param name="unitOfWork">The <see cref="WasmUnitOfWork"/> that is tracking the version.</param>
+        /// <param name="repo">The <see cref="WasmRepository"/> holding the concurrency values.</param>
         /// <returns>The <see cref="ContactConcurrencyResolver"/> instance.</returns>
         public static ContactConcurrencyResolver ToConcurrencyResolver(
-            this Contact contact, WasmUnitOfWork unitOfWork)
+            this Contact contact, WasmRepository repo)
         {
             return new ContactConcurrencyResolver()
             {
                 OriginalContact = contact,
-                RowVersion = unitOfWork.RowVersion
+                RowVersion = repo.RowVersion
             };
         }
     }

@@ -10,6 +10,7 @@ using ContactsApp.Server.Models;
 using ContactsApp.DataAccess;
 using ContactsApp.Repository;
 using ContactsApp.Model;
+using ContactsApp.BaseRepository;
 
 namespace ContactsApp.Server
 {
@@ -48,8 +49,14 @@ namespace ContactsApp.Server
                 .EnableSensitiveDataLogging());
 
             // add the repository
-            services.AddScoped<IRepository<ContactContext, Contact>, 
+            services.AddScoped<IRepository<Contact, ContactContext>, 
                 ContactRepository>();
+            services.AddScoped<IBasicRepository<Contact>>(sp =>
+                sp.GetService<IRepository<Contact, ContactContext>>());
+            services.AddScoped<IUnitOfWork<Contact>, UnitOfWork<ContactContext, Contact>>();
+
+            // for seeding the first time
+            services.AddScoped<SeedContacts>();
 
             services.AddControllersWithViews();
             services.AddRazorPages();

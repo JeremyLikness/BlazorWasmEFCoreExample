@@ -34,11 +34,14 @@ namespace ContactsApp.Client
 
             // client implementation
             builder.Services.AddScoped<IBasicRepository<Contact>, WasmRepository>();
+            builder.Services.AddScoped<IUnitOfWork<Contact>, WasmUnitOfWork>();
 
             // references to control filters and sorts
             builder.Services.AddScoped<GridControls>();
             builder.Services.AddScoped<IContactFilters>(sp => 
             sp.GetService<GridControls>());
+
+            // not used here but would be useful on the server
             builder.Services.AddScoped(sp =>
                 new ClaimsPrincipal(new ClaimsIdentity()));
 

@@ -25,6 +25,28 @@ namespace ContactsApp.Client.Data
         private string ApiQuery => $"{ApiPrefix}query/";
         private string ForUpdate => "?forUpdate=true";
 
+        /// <summary>
+        /// Contact as loaded then modified by the user.
+        /// </summary>
+        public Contact OriginalContact { get; set; }
+
+        /// <summary>
+        /// Contact on the database.
+        /// </summary>
+        public Contact DatabaseContact { get; set; }
+
+        /// <summary>
+        /// The row version of the last contact loaded.
+        /// </summary>
+        public byte[] RowVersion { get; set; }
+
+        /// <summary>
+        /// This will serialize a response from JSON and return null
+        /// if the status code is 404 - not found.
+        /// </summary>
+        /// <typeparam name="TEntity"></typeparam>
+        /// <param name="url"></param>
+        /// <returns></returns>
         private async Task<TEntity> SafeGetFromJsonAsync<TEntity>(string url)
         {
             var result = await _apiClient.GetAsync(url);
@@ -35,6 +57,7 @@ namespace ContactsApp.Client.Data
             result.EnsureSuccessStatusCode();
             return await result.Content.ReadFromJsonAsync<TEntity>();
         }
+
         /// <summary>
         /// Creates a new instance of the <see cref="WasmRepository"/>.
         /// </summary>
@@ -59,15 +82,6 @@ namespace ContactsApp.Client.Data
         }
 
         /// <summary>
-        /// Create a new <see cref="IUnitOfWork"/>.
-        /// </summary>
-        /// <returns>The <see cref="WasmUnitOfWork"/> implementation.</returns>
-        public IUnitOfWork CreateUnitOfWork(ClaimsPrincipal user)
-        {
-            return new WasmUnitOfWork(this);
-        }
-
-        /// <summary>
         /// Delete a <see cref="Contact"/>.
         /// </summary>
         /// <param name="id">The id of the <see cref="Contact"/>.</param>
@@ -89,21 +103,33 @@ namespace ContactsApp.Client.Data
         /// <summary>
         /// Load a <see cref="Contact"/>.
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="id">The id of the <see cref="Contact"/> to load.</param>
+        /// <param name="_">Unused <see cref="ClaimsPrincipal"/>.</param>
+        /// <param name="forUpdate"><c>True</c> when concurrency information should be loaded.</param>
         /// <returns></returns>
-        public Task<Contact> LoadAsync(int id)
+        public Task<Contact> LoadAsync(
+            int id, 
+            ClaimsPrincipal _, 
+            bool forUpdate = false)
         {
+            if (forUpdate)
+            {
+                return LoadAsync(id);
+            }
             return SafeGetFromJsonAsync<Contact>($"{ApiContacts}{id}");
         }
 
         /// <summary>
-        /// Load a <see cref="Contact"/> for updates, with a <see cref="IUnitOfWork"/>.
+        /// Load a <see cref="Contact"/> for updates.
         /// </summary>
         /// <param name="id">The id of the <see cref="Contact"/> to load.</param>
-        /// <param name="unitOfWork">The <see cref="IUnitOfWork"/>.</param>
         /// <returns></returns>
-        public async Task<Contact> LoadAsync(int id, IUnitOfWork unitOfWork)
+        public async Task<Contact> LoadAsync(int id)
         {
+            OriginalContact = null;
+            DatabaseContact = null;
+            RowVersion = null;
+
             var result = await SafeGetFromJsonAsync<ContactConcurrencyResolver>
                     ($"{ApiContacts}{id}{ForUpdate}");
 
@@ -112,14 +138,12 @@ namespace ContactsApp.Client.Data
                 return null;
             }
 
-            // get a typed instance to work with
-            var wasmUnitOfWork = unitOfWork.Resolve();
-
             // our instance
-            wasmUnitOfWork.OriginalContact = result.OriginalContact;
+            OriginalContact = result.OriginalContact;
 
             // save the version
-            wasmUnitOfWork.RowVersion = result.RowVersion;
+            RowVersion = result.RowVersion;
+
             return result.OriginalContact;
         }
 
@@ -139,49 +163,45 @@ namespace ContactsApp.Client.Data
         }
 
         /// <summary>
-        /// This will throw an <exception cref="NotImplementedException">exception</exception>.
-        /// </summary>
-        /// <param name="item">A <see cref="Contact"/>.</param>
-        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
-        /// <returns>A <see cref="Contact"/>.</returns>
-        /// 
-        public Task<Contact> UpdateAsync(Contact item, ClaimsPrincipal user)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
         /// Update a <see cref="Contact"/> with concurrency checks.
         /// </summary>
         /// <param name="item">The <see cref="Contact"/> to update.</param>
-        /// <param name="uow">The <see cref="IUnitOfWork"/> to update from.</param>
+        /// <param name="user">The <see cref="ClaimsPrincipal"/>.</param>
         /// <returns>The updated <see cref="Contact"/>.</returns>
         public async Task<Contact>
-            UpdateAsync(Contact item, IUnitOfWork uow)
+            UpdateAsync(Contact item, ClaimsPrincipal user)
         {
             // send down the contact with the version we have tracked
-            var unitOfWork = uow.Resolve();
             var result = await _apiClient.PutAsJsonAsync(
                 $"{ApiContacts}{item.Id}",
-                item.ToConcurrencyResolver(unitOfWork.Resolve()));
+                item.ToConcurrencyResolver(this));
             if (result.IsSuccessStatusCode)
             {
                 return null;
             }
-            if (result.StatusCode == System.Net.HttpStatusCode.Conflict)
+            if (result.StatusCode == HttpStatusCode.Conflict)
             {
                 // concurrency issue, so extract what the updated information is
                 var resolver = await
                     result.Content.ReadFromJsonAsync<ContactConcurrencyResolver>();
-                unitOfWork.DatabaseContact = resolver.DatabaseContact;
-                var ex = new ContactConcurrencyException(item, new Exception())
+                DatabaseContact = resolver.DatabaseContact;
+                var ex = new RepoConcurrencyException<Contact>(item, new Exception())
                 {
-                    DbContact = resolver.DatabaseContact
+                    DbEntity = resolver.DatabaseContact
                 };
-                unitOfWork.RowVersion = resolver.RowVersion; // for override
+                RowVersion = resolver.RowVersion; // for override
                 throw ex;
             }
             throw new HttpRequestException($"Bad status code: {result.StatusCode}");
+        }
+
+        /// <summary>
+        /// Not implemented.
+        /// </summary>
+        /// <param name="item">Don't care.</param>
+        public void Attach(Contact item)
+        {
+            throw new System.NotImplementedException();
         }
 
         /// <summary>
@@ -190,6 +210,31 @@ namespace ContactsApp.Client.Data
         /// <param name="query">The <see cref="IQueryable{Contact}"/> delegate.</param>
         /// <returns>A <see cref="Task"/>.</returns>
         public Task QueryAsync(Func<IQueryable<Contact>, Task> query)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Not implemented.
+        /// </summary>
+        /// <typeparam name="TPropertyType"></typeparam>
+        /// <param name="item"></param>
+        /// <param name="propertyName"></param>
+        /// <returns></returns>
+        public Task<TPropertyType> GetPropertyValueAsync<TPropertyType>(Contact item, string propertyName)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Not implemented.
+        /// </summary>
+        /// <typeparam name="TPropertyType"></typeparam>
+        /// <param name="item"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="value"></param>
+        /// <returns></returns>
+        public Task SetOriginalValueForConcurrencyAsync<TPropertyType>(Contact item, string propertyName, TPropertyType value)
         {
             throw new NotImplementedException();
         }

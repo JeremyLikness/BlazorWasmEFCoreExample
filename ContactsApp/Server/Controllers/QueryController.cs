@@ -5,11 +5,9 @@ using ContactsApp.DataAccess;
 using ContactsApp.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Server.HttpSys;
-using ContactsApp.Server.Models;
-using Microsoft.AspNetCore.Identity;
-using System.Linq;
-using System.Security.Claims;
+using ContactsApp.BaseRepository;
+using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ContactsApp.Server.Controllers
 {
@@ -21,15 +19,19 @@ namespace ContactsApp.Server.Controllers
     [Authorize]
     public class QueryController : ControllerBase
     {
-        private readonly IRepository<ContactContext, Contact> _repo;
+        private readonly IBasicRepository<Contact> _repo;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Creates a new instance of the <see cref="QueryController"/>.
         /// </summary>
-        /// <param name="repo">The <see cref="IRepository{ContactContext, Contact}"/> repo to use.</param>
-        public QueryController(IRepository<ContactContext, Contact> repo)
+        /// <param name="repo">The <see cref="IBasicRepository{Contact}"/> repo to use.</param>
+        /// <param name="provider">The <see cref="IServiceProvider"/> for dependency resolution.</param>
+        public QueryController(IBasicRepository<Contact> repo,
+            IServiceProvider provider)
         {
             _repo = repo;
+            _serviceProvider = provider;
         }
 
         /// <summary>
@@ -47,15 +49,8 @@ namespace ContactsApp.Server.Controllers
             // and will create and seed the database. This is NOT code to
             // put into production. Instead, look to migrations or another
             // method.
-            using var uow = _repo.CreateUnitOfWork(User);
-            HttpContext.Response.RegisterForDispose(uow);
-            var created = await uow.Context.Database.EnsureCreatedAsync();
-            if (created)
-            {
-                var seed = new SeedContacts();
-                await seed.SeedDatabaseWithContactCountOfAsync(uow.Context, 500);
-                await uow.CommitAsync();
-            }
+            var seed = _serviceProvider.GetService<SeedContacts>();
+            await seed.CheckAndSeedDatabaseAsync(User);
 
             var adapter = new GridQueryAdapter(filter);
             ICollection<Contact> contacts = null;
@@ -69,6 +64,5 @@ namespace ContactsApp.Server.Controllers
                 Contacts = contacts
             });
         }
-
     }
 }

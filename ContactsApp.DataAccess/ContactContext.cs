@@ -1,11 +1,9 @@
 ﻿using ContactsApp.Model;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.Serialization.Json;
 using System.Security.Claims;
 using System.Text.Json;
 using System.Threading;
@@ -16,12 +14,17 @@ namespace ContactsApp.DataAccess
     /// <summary>
     /// Context for the contacts database.
     /// </summary>
-    public class ContactContext : DbContext
+    public class ContactContext : DbContext, ISupportUser
     {
         /// <summary>
         /// Tracking lifetime of contexts.
         /// </summary>
         private readonly Guid _id;
+
+        /// <summary>
+        /// For audit info
+        /// </summary>
+        private readonly ContactAuditAdapter _adapter = new ContactAuditAdapter();
 
         /// <summary>
         /// The logged in <see cref="ClaimsPrincipal"/>.
@@ -72,83 +75,16 @@ namespace ContactsApp.DataAccess
             Debug.WriteLine($"{_id} context created.");
         }
 
+        /// <summary>
+        /// Override the save operation to generate audit information.
+        /// </summary>
+        /// <param name="token">The <seealso cref="CancellationToken"/>.</param>
+        /// <returns>The result.</returns>
         public override async Task<int> SaveChangesAsync(CancellationToken token
             = default)
         {
-            var user = "Unknown";
-
-            if (User != null)
-            {
-                var name = User.Claims.FirstOrDefault(
-                    c => c.Type == ClaimTypes.NameIdentifier);
-            
-                if (name != null)
-                {
-                    user = name.Value;
-                }
-            }
-
-            var audits = new List<ContactAudit>();
-
-            // audit contacts
-            foreach (var item in ChangeTracker.Entries<Contact>())
-            {
-                if (item.State == EntityState.Modified ||
-                    item.State == EntityState.Added ||
-                    item.State == EntityState.Deleted)
-                {
-                    if (item.State == EntityState.Added)
-                    {
-                        item.Property<string>(CreatedBy).CurrentValue =
-                            user;
-                        item.Property<DateTimeOffset>(CreatedOn).CurrentValue =
-                            DateTimeOffset.UtcNow;
-                    }
-
-                    if (item.State == EntityState.Modified)
-                    {
-                        item.Property<string>(ModifiedBy).CurrentValue =
-                            user;
-                        item.Property<DateTimeOffset>(ModifiedOn).CurrentValue =
-                          DateTimeOffset.UtcNow;
-                    }
-                    var changes = new PropertyChanges<Contact>(item);
-                    var audit = new ContactAudit
-                    {
-                        ContactId = item.Entity.Id,
-                        Action = item.State.ToString(),
-                        User = user,
-                        Changes = JsonSerializer.Serialize(changes),
-                        ContactRef = item.Entity
-                    };
-
-                    audits.Add(audit);
-                }
-            }
-            
-            if (audits.Count > 0)
-            {
-                ContactAudits.AddRange(audits);
-            }
-            
-            var result = await base.SaveChangesAsync(token);
-
-            var secondSave = false;
-            
-            // attach ids for add operations
-            foreach(var audit in audits.Where(a => a.ContactId == 0).ToList())
-            {
-                secondSave = true;
-                audit.ContactId = audit.ContactRef.Id;
-                Entry(audit).State = EntityState.Modified;
-            }
-
-            if (secondSave)
-            {
-                await base.SaveChangesAsync(token);
-            }
-
-            return result;
+            return await _adapter.ProcessContactChangesAsync(
+                User, this, async () => await base.SaveChangesAsync(token));            
         }
 
         /// <summary>

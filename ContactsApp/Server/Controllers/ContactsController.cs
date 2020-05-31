@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using ContactsApp.Repository;
 using ContactConcurrencyResolver = ContactsApp.Client.Data.ContactConcurrencyResolver;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ContactsApp.Server.Controllers
 {
@@ -19,15 +20,19 @@ namespace ContactsApp.Server.Controllers
     [Authorize]
     public class ContactsController : ControllerBase
     {
-        private readonly IRepository<ContactContext, Contact> _repo;
+        private readonly IBasicRepository<Contact> _repo;
+        private readonly IServiceProvider _serviceProvider;
 
         /// <summary>
         /// Creates a new instance of the <see cref="ContactsController"/>.
         /// </summary>
-        /// <param name="repo">The <see cref="IRepository{ContactContext, Contact}"/> repo to work with.</param>
-        public ContactsController(IRepository<ContactContext, Contact> repo)
+        /// <param name="repo">The <see cref="IBasicRepository{Contact}"/> repo to work with.</param>
+        /// <param name="provider">The <see cref="IServiceProvider"/> for dependency resolution.</param>
+        public ContactsController(IBasicRepository<Contact> repo,
+            IServiceProvider provider)
         {
             _repo = repo;
+            _serviceProvider = provider;
         }
 
         /// <summary>
@@ -47,9 +52,9 @@ namespace ContactsApp.Server.Controllers
             }
             if (forUpdate)
             {
-                using var unitOfWork = _repo.CreateUnitOfWork(User);
+                var unitOfWork = _serviceProvider.GetService<IUnitOfWork<Contact>>();
                 HttpContext.Response.RegisterForDispose(unitOfWork);
-                var result = await _repo.LoadAsync(id, unitOfWork);
+                var result = await unitOfWork.Repo.LoadAsync(id, User, true);
 
                 // return version for tracking on client. It is not
                 // part of the C# class so it is tracked as a "shadow property"
@@ -57,14 +62,14 @@ namespace ContactsApp.Server.Controllers
                 {
                     OriginalContact = result,
                     RowVersion = result == null ? null :
-                    unitOfWork.Context.Entry(result)
-                    .Property<byte[]>(ContactContext.RowVersion).CurrentValue
+                    await unitOfWork.Repo.GetPropertyValueAsync<byte[]>(
+                        result, ContactContext.RowVersion)
                 };
                 return new OkObjectResult(concurrencyResult);
             }
             else
             {
-                var result = await _repo.LoadAsync(id);
+                var result = await _repo.LoadAsync(id, User);
                 return result == null ? (IActionResult)new NotFoundResult() :
                     new OkObjectResult(result);
             }
@@ -80,7 +85,6 @@ namespace ContactsApp.Server.Controllers
         public async Task<IActionResult> PostAsync(
             [FromBody] Contact contact)
         {
-
             return contact == null
                 ? new BadRequestResult()
                 : ModelState.IsValid ?
@@ -107,27 +111,23 @@ namespace ContactsApp.Server.Controllers
             }
             if (ModelState.IsValid)
             {
-                var unitOfWork = _repo.CreateUnitOfWork(User);
+                var unitOfWork = _serviceProvider.GetService<IUnitOfWork<Contact>>();
                 HttpContext.Response.RegisterForDispose(unitOfWork);
+                unitOfWork.SetUser(User);
                 // this gets the contact on the board for EF Core
-                unitOfWork.Context.Attach(value.OriginalContact);
-                // now we get the EF Core tracked version
-                var tracked = unitOfWork.Context.Entry(value.OriginalContact);
-                // we tell EF Core what version we loaded
-                tracked.Property<byte[]>(ContactContext.RowVersion).OriginalValue =
-                        value.RowVersion;
-                // we tell EF Core to modify entity
-                tracked.State = EntityState.Modified;
+                unitOfWork.Repo.Attach(value.OriginalContact);
+                await unitOfWork.Repo.SetOriginalValueForConcurrencyAsync(
+                    value.OriginalContact, ContactContext.RowVersion, value.RowVersion);
                 try
                 {
                     await unitOfWork.CommitAsync();
                     return new OkResult();
                 }
-                catch (ContactConcurrencyException dbex)
+                catch (RepoConcurrencyException<Contact> dbex)
                 {
                     // oops it has been updated, so send back the database version
                     // and the new RowVersion in case the user wants to override
-                    value.DatabaseContact = dbex.DbContact;
+                    value.DatabaseContact = dbex.DbEntity;
                     value.RowVersion = dbex.RowVersion;
                     return new ConflictObjectResult(value);
                 }

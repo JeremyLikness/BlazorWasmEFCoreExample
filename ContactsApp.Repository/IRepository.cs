@@ -1,34 +1,23 @@
 ﻿using ContactsApp.BaseRepository;
+using ContactsApp.DataAccess;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using System.Threading.Tasks;
+using System;
 
 namespace ContactsApp.Repository
 {
     /// <summary>
-    /// Interface for a repository that exposes the <seealso cref="DbContext"/>.
+    /// More fine-grained repository that exposes the data context. Used by
+    /// the <see cref="UnitOfWork{TContext, TEntity}"/> implementation.
     /// </summary>
-    /// <typeparam name="TContext">The <see cref="TContext"/> to use.</typeparam>
-    /// <typeparam name="TEntity">The <see cref="TEntity"/> this repository works with.</typeparam>
-    public interface IRepository<TContext, TEntity>:
-        IBasicRepository<TEntity> where TContext : DbContext
+    /// <typeparam name="TEntity">The <see cref="TEntity"/> for the repo.</typeparam>
+    /// <typeparam name="TContext">The <see cref="DbContext"/> type.</typeparam>
+    public interface IRepository<TEntity, TContext>:
+        IDisposable,
+        IBasicRepository<TEntity> where TContext: DbContext, ISupportUser
     {
         /// <summary>
-        /// Create a more specific <see cref="IUnitOfWork"/> with context.
+        /// The <see cref="DbContext"/> instance.
         /// </summary>
-        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
-        /// <returns>The <see cref="IUnitOfWorkContext{TContext}"/> instance.</returns>
-        new IUnitOfWorkContext<TContext> CreateUnitOfWork(ClaimsPrincipal user);
-
-        /// <summary>
-        /// Load an item in a unit of work.
-        /// </summary>
-        /// <param name="id">The id of the <see cref="TEntity"/> to load.</param>
-        /// <param name="unitOfWork">
-        /// The <see cref="IUnitOfWorkContext{TContext}"/>
-        /// to load it in.
-        /// </param>
-        /// <returns>The <see cref="TEntity"/> instance.</returns>
-        Task<TEntity> LoadAsync(int id, IUnitOfWorkContext<TContext> unitOfWork);
+        TContext PersistedContext { get; set;  }
     }
 }

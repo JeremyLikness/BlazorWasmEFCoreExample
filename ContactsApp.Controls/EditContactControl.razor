@@ -45,10 +45,10 @@ else
     public int ContactId { get; set; }
 
     /// <summary>
-    /// The <see cref="IBasicRepository{Contact}"/> to service requests.
+    /// The <see cref="IUnitOfWork{Contact}"/> to service requests.
     /// </summary>
     [Parameter]
-    public IBasicRepository<Contact> Service { get; set; }
+    public IUnitOfWork<Contact> Service { get; set; }
 
     /// <summary>
     /// <see cref="Contact"/> being edited.
@@ -61,11 +61,6 @@ else
     /// Database version of <see cref="Contact"/> when concurrency issues exist.
     /// </summary>
     public Contact DbContact { get; set; }
-
-    /// <summary>
-    /// The <see cref="IUnitOfWork"/> to track changes.
-    /// </summary>
-    private IUnitOfWork UnitOfWork { get; set; }
 
     /// <summary>
     /// Avoid concurrent requests.
@@ -94,8 +89,7 @@ else
     protected override async Task OnParametersSetAsync()
     {
         Busy = true; // start async
-        UnitOfWork = Service.CreateUnitOfWork(User);
-        Contact = await Service.LoadAsync(ContactId, UnitOfWork);
+        Contact = await Service.Repo.LoadAsync(ContactId, null, true);
         Busy = false; // end async
         await base.OnInitializedAsync();
     }
@@ -123,16 +117,16 @@ else
         Busy = true; // async
         try
         {
-            await UnitOfWork.CommitAsync();
+            await Service.CommitAsync();
             // go to view to see the record
             Nav.NavigateTo($"/view/{Contact.Id}/true");
         }
-        catch (ContactConcurrencyException dbex)
+        catch (RepoConcurrencyException<Contact> dbex)
         {
             // concurrency issues!
             ConcurrencyError = true;
 
-            if (dbex.DbContact == null)
+            if (dbex.DbEntity == null)
             {
                 // deleted - show contact not found
                 Nav.NavigateTo($"/view/{Contact.Id}");
@@ -140,7 +134,7 @@ else
             }
 
             // bind to show labels on form
-            DbContact = dbex.DbContact;
+            DbContact = dbex.DbEntity;
 
             Error = false;
             Busy = false;
@@ -174,10 +168,10 @@ else
         {
             if (disposing)
             {
-                if (UnitOfWork != null)
+                if (Service != null)
                 {
-                    UnitOfWork.Dispose();
-                    UnitOfWork = null;
+                    Service.Dispose();
+                    Service = null;
                 }
             }
 
@@ -185,6 +179,9 @@ else
         }
     }
 
+    /// <summary>
+    /// Dispose pattern.
+    /// </summary>
     public void Dispose()
     {
         // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method

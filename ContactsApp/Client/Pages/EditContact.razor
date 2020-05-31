@@ -1,6 +1,6 @@
 ﻿@page "/edit/{ContactId:int}"
 
-@inherits OwningComponentBase<IBasicRepository<Contact>>
+@inherits OwningComponentBase<IUnitOfWork<Contact>>
 
 @using ContactsApp.BaseRepository
 @using ContactsApp.Model

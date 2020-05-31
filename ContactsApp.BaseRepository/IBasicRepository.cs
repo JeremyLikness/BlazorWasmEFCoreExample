@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -12,13 +13,6 @@ namespace ContactsApp.BaseRepository
     /// <typeparam name="TEntity">The class the repository is for.</typeparam>
     public interface IBasicRepository<TEntity>
     {
-        /// <summary>
-        /// Generate a unit of work.
-        /// </summary>
-        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
-        /// <returns>A new <seealso cref="IUnitOfWork"/>.</returns>
-        IUnitOfWork CreateUnitOfWork(ClaimsPrincipal user);
-
         /// <summary>
         /// Apply a query and return results.
         /// </summary>
@@ -39,8 +33,10 @@ namespace ContactsApp.BaseRepository
         /// Load a single item.
         /// </summary>
         /// <param name="id">The id of the item.</param>
+        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
+        /// <param name="forUpdate"><c>True</c> to load concurrency information.</param>
         /// <returns>The <seealso cref="TEntity"/> instance.</returns>
-        Task<TEntity> LoadAsync(int id);
+        Task<TEntity> LoadAsync(int id, ClaimsPrincipal user, bool forUpdate = false);
 
         /// <summary>
         /// Delete an item.
@@ -51,9 +47,16 @@ namespace ContactsApp.BaseRepository
         Task<bool> DeleteAsync(int id, ClaimsPrincipal user);
 
         /// <summary>
+        /// Attach an entity to the database context for tracking.
+        /// </summary>
+        /// <param name="item">The <see cref="TEntity"/> instance to attach.</param>
+        void Attach(TEntity item);
+
+        /// <summary>
         /// Add a new item.
         /// </summary>
         /// <param name="item">The <see cref="TEntity"/> to add.</param>
+        /// <param name="user">The logged in <see cref="ClaimsPrincipal"/>.</param>
         /// <returns>The <see cref="TEntity"/> instance with id set.</returns>
         Task<TEntity> AddAsync(TEntity item, ClaimsPrincipal user);
 
@@ -66,18 +69,24 @@ namespace ContactsApp.BaseRepository
         Task<TEntity> UpdateAsync(TEntity item, ClaimsPrincipal user);
 
         /// <summary>
-        /// Update an item in the context of an <see cref="IUnitOfWork"/>.
+        /// Get a property from the instance. Mainly used for shadow properties.
         /// </summary>
-        /// <param name="item">The <see cref="TEntity"/> to update.</param>
-        /// <returns>The updated <see cref="TEntity"/>.</returns>
-        Task<TEntity> UpdateAsync(TEntity item, IUnitOfWork unitOfWork);
+        /// <typeparam name="TPropertyType">The type of the property.</typeparam>
+        /// <param name="item">The <see cref="TEntity"/> instance the property is on.</param>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <returns>The value.</returns>
+        Task<TPropertyType> GetPropertyValueAsync<TPropertyType>(
+            TEntity item, string propertyName);
 
         /// <summary>
-        /// Load an item in the context of an <see cref="IUnitOfWork"/>.
+        /// Set the original value to trigger concurrency checks.
         /// </summary>
-        /// <param name="id">The id of the <see cref="TEntity"/> to load.</param>
-        /// <param name="unitOfWork">The <see cref="IUnitOfWork"/> to load it in.</param>
-        /// <returns>The <see cref="TEntity"/> instance.</returns>
-        Task<TEntity> LoadAsync(int id, IUnitOfWork unitOfWork);
+        /// <typeparam name="TPropertyType">The type of the property.</typeparam>
+        /// <param name="item">The <see cref="TEntity"/> to set the original value for.</param>
+        /// <param name="propertyName">The name of the property.</param>
+        /// <param name="value">The value.</param>
+        /// <returns></returns>
+        Task SetOriginalValueForConcurrencyAsync<TPropertyType>(
+            TEntity item, string propertyName, TPropertyType value);
     }
 }
