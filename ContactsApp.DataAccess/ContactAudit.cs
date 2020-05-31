@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ContactsApp.Model;
+using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ContactsApp.DataAccess
 {
@@ -14,5 +16,8 @@ namespace ContactsApp.DataAccess
         public string User { get; set; }
         public string Action { get; set; }
         public string Changes { get; set; }
+
+        [NotMapped]
+        public Contact ContactRef { get; set; }
     }
 }

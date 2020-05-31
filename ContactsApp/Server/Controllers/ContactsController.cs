@@ -48,6 +48,7 @@ namespace ContactsApp.Server.Controllers
             if (forUpdate)
             {
                 using var unitOfWork = _repo.CreateUnitOfWork(User);
+                HttpContext.Response.RegisterForDispose(unitOfWork);
                 var result = await _repo.LoadAsync(id, unitOfWork);
 
                 // return version for tracking on client. It is not
@@ -107,6 +108,7 @@ namespace ContactsApp.Server.Controllers
             if (ModelState.IsValid)
             {
                 var unitOfWork = _repo.CreateUnitOfWork(User);
+                HttpContext.Response.RegisterForDispose(unitOfWork);
                 // this gets the contact on the board for EF Core
                 unitOfWork.Context.Attach(value.OriginalContact);
                 // now we get the EF Core tracked version

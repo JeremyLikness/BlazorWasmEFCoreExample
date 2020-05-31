@@ -5,6 +5,11 @@ using ContactsApp.DataAccess;
 using ContactsApp.Repository;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Server.HttpSys;
+using ContactsApp.Server.Models;
+using Microsoft.AspNetCore.Identity;
+using System.Linq;
+using System.Security.Claims;
 
 namespace ContactsApp.Server.Controllers
 {
@@ -24,7 +29,7 @@ namespace ContactsApp.Server.Controllers
         /// <param name="repo">The <see cref="IRepository{ContactContext, Contact}"/> repo to use.</param>
         public QueryController(IRepository<ContactContext, Contact> repo)
         {
-            _repo = repo;            
+            _repo = repo;
         }
 
         /// <summary>
@@ -43,6 +48,7 @@ namespace ContactsApp.Server.Controllers
             // put into production. Instead, look to migrations or another
             // method.
             using var uow = _repo.CreateUnitOfWork(User);
+            HttpContext.Response.RegisterForDispose(uow);
             var created = await uow.Context.Database.EnsureCreatedAsync();
             if (created)
             {
@@ -50,8 +56,9 @@ namespace ContactsApp.Server.Controllers
                 await seed.SeedDatabaseWithContactCountOfAsync(uow.Context, 500);
                 await uow.CommitAsync();
             }
+
             var adapter = new GridQueryAdapter(filter);
-            ICollection<Contact> contacts = null; 
+            ICollection<Contact> contacts = null;
             // this call both executes a count to get total items and
             // updates the paging information
             await _repo.QueryAsync(

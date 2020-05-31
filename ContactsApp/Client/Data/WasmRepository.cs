@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -24,6 +25,16 @@ namespace ContactsApp.Client.Data
         private string ApiQuery => $"{ApiPrefix}query/";
         private string ForUpdate => "?forUpdate=true";
 
+        private async Task<TEntity> SafeGetFromJsonAsync<TEntity>(string url)
+        {
+            var result = await _apiClient.GetAsync(url);
+            if (result.StatusCode == HttpStatusCode.NotFound)
+            {
+                return default;
+            }
+            result.EnsureSuccessStatusCode();
+            return await result.Content.ReadFromJsonAsync<TEntity>();
+        }
         /// <summary>
         /// Creates a new instance of the <see cref="WasmRepository"/>.
         /// </summary>
@@ -82,18 +93,7 @@ namespace ContactsApp.Client.Data
         /// <returns></returns>
         public Task<Contact> LoadAsync(int id)
         {
-            try
-            {
-                return _apiClient.GetFromJsonAsync<Contact>($"{ApiContacts}{id}");
-            }
-            catch (Exception ex)
-            {
-                if (ex is HttpRequestException)
-                {
-                    return null;
-                }
-                throw;
-            }
+            return SafeGetFromJsonAsync<Contact>($"{ApiContacts}{id}");
         }
 
         /// <summary>
@@ -104,8 +104,13 @@ namespace ContactsApp.Client.Data
         /// <returns></returns>
         public async Task<Contact> LoadAsync(int id, IUnitOfWork unitOfWork)
         {
-            var result = await _apiClient.GetFromJsonAsync<ContactConcurrencyResolver>
-                ($"{ApiContacts}{id}{ForUpdate}");
+            var result = await SafeGetFromJsonAsync<ContactConcurrencyResolver>
+                    ($"{ApiContacts}{id}{ForUpdate}");
+
+            if (result == null)
+            {
+                return null;
+            }
 
             // get a typed instance to work with
             var wasmUnitOfWork = unitOfWork.Resolve();
