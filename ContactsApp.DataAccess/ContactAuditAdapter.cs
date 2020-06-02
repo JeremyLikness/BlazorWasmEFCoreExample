@@ -14,6 +14,7 @@ namespace ContactsApp.DataAccess
     /// </summary>
     public class ContactAuditAdapter
     {
+        private static readonly string Unknown = nameof(Unknown);
         /// <summary>
         /// Marks user and timestamp information on entities and generates
         /// the audit log.
@@ -27,7 +28,7 @@ namespace ContactsApp.DataAccess
             ContactContext context,
             Func<Task<int>> saveChangesAsync)
         {
-            var user = "Unknown";
+            var user = Unknown;
 
             // grab user identifier
             if (currentUser != null)
