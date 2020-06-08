@@ -36,7 +36,9 @@ Example of a Blazor WebAssembly project that uses Entity Framework Core on the s
 1. Open the solution file.
 1. Ensure the `ContactsApp.Server` project is set as the start up project.
 1. Open the `NuGet Package Manager -> Package Manager Console`. 
-1. In the console, with the server project selected, type `update-database`.
+1. In the console, with the server project selected, type:
+
+    `update-database -Context ApplicationAuditDbContext`
 1. You are ready to launch the application.
 
 See note at the end of the next section.
@@ -47,7 +49,7 @@ See note at the end of the next section.
 1. If you haven't installed the EF Core Command Line Interface (CLI), install it by following [these instructions](https://docs.microsoft.com/ef/core/miscellaneous/cli/dotnet). Choose the latest stable version (the project file currently ships with version 3.1.4).
 1. Run 
 
-    `dotnet ef database update` 
+    `dotnet ef database update --context ApplicationAuditDbContext` 
     
     to set up the identity database.
 1. Type 
