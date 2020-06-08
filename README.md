@@ -59,3 +59,9 @@ See note at the end of the next section.
 > **Note**: the demo app is designed to create and populate the contacts database the first time you open the web page. This may result in a delay and from Visual Studio can throw a timeout excpetion. This is normal and is just used to make setup easier. Subsequent runs should load immediately.
 
 Submit any feedback, questions, suggestions, or issues [here](https://github.com/JeremyLikness/BlazorWasmEFCoreExample/issues/new).
+
+Regards,
+
+![Jeremy Likness](https://blog.jeremylikness.com/images/jeremylikness.gif)
+
+[@JeremyLikness](https://twitter.com/JeremyLikness)
