@@ -59,4 +59,4 @@ namespace ContactsApp.Model
         [RegularExpression(@"^\d{5}(?:[-\s]\d{4})?$", ErrorMessage = "Enter a valid zipcode in 55555 or 55555-5555 format")]
         public string ZipCode { get; set; }
     }
-    }
+}
