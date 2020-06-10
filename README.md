@@ -62,6 +62,18 @@ See note at the end of the next section.
   
 > **Note**: the demo app is designed to create and populate the contacts database the first time you open the web page. This may result in a delay and from Visual Studio can throw a timeout excpetion. This is normal and is just used to make setup easier. Subsequent runs should load immediately.
 
+## Migrations for Contacts Database
+
+The context for contacts (`ContactContext`) resides in the `ContactsApp.DataAccess` assembly. It is a .NET Standard class library and cannot be executed directly. I created a `ContactContextFactory` in the `ContactsApp.Server` project to enable migrations by using the SQL Server provider and loading the connection string. To create a migration, you must specify the executable startup project and the context name. This command will create a migration in the `Migrations` folder named `InitialContact` (assuming this is run from the root of the solution directory):
+
+```text
+dotnet ef migrations add --startup-project ContactsApp/Server --context ContactContext InitialContact
+```
+
+Use the `--namespace` parameter to specify a different namespace to help avoid conflicts with the identity context.
+
+---
+
 Submit any feedback, questions, suggestions, or issues [here](https://github.com/JeremyLikness/BlazorWasmEFCoreExample/issues/new).
 
 Regards,
