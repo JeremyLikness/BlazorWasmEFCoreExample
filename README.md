@@ -6,6 +6,10 @@ Example of a Blazor WebAssembly project that uses Entity Framework Core on the s
 
 > **Blog post is coming**
 
+## Thank you
+
+🙏 Thanks to [John Barrett](https://github.com/274188A) for helping identify initial issues.
+
 ## Features
 
 * Application hosted authentication and registration
