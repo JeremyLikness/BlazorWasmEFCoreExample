@@ -4,7 +4,10 @@
 
 Example of a Blazor WebAssembly project that uses Entity Framework Core on the server for data access.
 
-> **Blog post is coming**
+I created this series of blog posts to explain the project in detail:
+- [Build a Blazor WebAssembly Line of Business App Part 1: Intro and Data Access](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app/)
+- [Build a Blazor WebAssembly Line of Business App Part 2: Client and Server](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app-part-2/)
+- [Build a Blazor WebAssembly Line of Business App Part 3: Query, Delete and Concurrency](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app-part-3/)
 
 ## Thank you
 
