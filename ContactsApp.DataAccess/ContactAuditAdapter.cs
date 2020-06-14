@@ -40,6 +40,10 @@ namespace ContactsApp.DataAccess
                 {
                     user = name.Value;
                 }
+                else if (!string.IsNullOrWhiteSpace(currentUser.Identity.Name))
+                {
+                    user = currentUser.Identity.Name;
+                }
             }
 
             var audits = new List<ContactAudit>();
