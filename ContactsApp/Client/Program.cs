@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using ContactsApp.BaseRepository;
 using ContactsApp.Client.Data;
+using ContactsApp.Controls;
 using ContactsApp.Controls.Grid;
 using ContactsApp.Model;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
@@ -37,9 +38,10 @@ namespace ContactsApp.Client
             builder.Services.AddScoped<IUnitOfWork<Contact>, WasmUnitOfWork>();
 
             // references to control filters and sorts
-            builder.Services.AddScoped<GridControls>();
-            builder.Services.AddScoped<IContactFilters>(sp => 
-            sp.GetService<GridControls>());
+            builder.Services.AddScoped<IPageHelper, PageHelper>();
+            builder.Services.AddScoped<IContactFilters, ContactFilters>();
+            builder.Services.AddScoped<GridQueryAdapter>();
+            builder.Services.AddScoped<EditService>();
 
             // not used here but would be useful on the server
             builder.Services.AddScoped(sp =>

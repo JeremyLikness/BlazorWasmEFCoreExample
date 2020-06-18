@@ -1,23 +1,15 @@
 ﻿@page "/View/{ContactId:int}"
-@page "/View/{ContactId:int}/{EditSuccess:bool}"
 
 @using Microsoft.AspNetCore.Authorization
 
 @attribute [Authorize]
 
-<ViewContactControl ContactId="ContactId" EditSuccess="EditSuccess" />
+<ViewContactControl ContactId="ContactId"/>
 
 @code {
-
     /// <summary>
     /// Id from route of contact.
     /// </summary>
     [Parameter]
     public int ContactId { get; set; }
-
-    /// <summary>
-    /// True with redirect from add.
-    /// </summary>
-    [Parameter]
-    public bool EditSuccess { get; set; }
 }

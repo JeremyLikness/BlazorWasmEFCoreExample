@@ -1,8 +1,5 @@
 ﻿@using ContactsApp.Model;
-@using Microsoft.AspNetCore.Components.Forms; 
-
-@inject NavigationManager Nav;
-@inject GridControls Controls;
+@using Microsoft.AspNetCore.Components.Forms;
 
 <h1>@Mode Contact</h1>
 <hr />
@@ -62,56 +59,43 @@
     </EditForm>
 }
 @code {
-    private bool _busy;
+            /// <summary>
+            /// Let parent handle result of validation.
+            /// </summary>
+            [Parameter]
+            public EventCallback<bool> ValidationResult { get; set; }
 
-    /// <summary>
-    /// Let parent handle result of validation.
-    /// </summary>
-    [Parameter]
-    public EventCallback<bool> ValidationResult { get; set; }
+            /// <summary>
+            /// Let parent handle what to do on cancel.
+            /// </summary>
+            [Parameter]
+            public EventCallback CancelRequest { get; set; }
 
-    /// <summary>
-    /// Let parent handle what to do on cancel.
-    /// </summary>
-    [Parameter]
-    public EventCallback CancelRequest { get; set; }
+            /// <summary>
+            /// <c>True</c> if add mode.
+            /// </summary>
+            [Parameter]
+            public bool IsAdd { get; set; }
 
-    /// <summary>
-    /// <c>True</c> if add mode.
-    /// </summary>
-    [Parameter]
-    public bool IsAdd { get; set; }
+            /// <summary>
+            /// The <see cref="Contact"/> to upsert.
+            /// </summary>
+            [Parameter]
+            public Contact Contact { get; set; }
 
-    /// <summary>
-    /// The <see cref="Contact"/> to upsert.
-    /// </summary>
-    [Parameter]
-    public Contact Contact { get; set; }
+            /// <summary>
+            /// The database version of <see cref="Contact"/> if a concurrency issue
+            /// exists.
+            /// </summary>
+            [Parameter]
+            public Contact DbContact { get; set; }
 
-    /// <summary>
-    /// The database version of <see cref="Contact"/> if a concurrency issue
-    /// exists.
-    /// </summary>
-    [Parameter]
-    public Contact DbContact { get; set; }
-
-    /// <summary>
-    /// Prevent multiple asynchronous operations at the same time.
-    /// </summary>
-    [Parameter]
-    public bool Busy
-    {
-        get => _busy;
-        set
-        {
-            if (value != _busy)
-            {
-                _busy = value;
-                StateHasChanged();
-            }
-        }
-    }
-
+            /// <summary>
+            /// Prevent multiple asynchronous operations at the same time.
+            /// </summary>
+            [Parameter]
+            public bool Busy { get; set; }
+    
     /// <summary>
     /// Mode.
     /// </summary>

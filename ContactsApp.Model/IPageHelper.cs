@@ -21,6 +21,26 @@
         int PageCount { get; }
 
         /// <summary>
+        /// The next page.
+        /// </summary>
+        int NextPage { get; }
+
+        /// <summary>
+        /// <c>true</c> when next page exists.
+        /// </summary>
+        bool HasNext { get;  }
+
+        /// <summary>
+        /// The previous page
+        /// </summary>
+        int PrevPage { get; }
+
+        /// <summary>
+        /// <c>true</c> when previous page exists.
+        /// </summary>
+        bool HasPrev { get; }
+
+        /// <summary>
         /// Items on current page.
         /// </summary>
         int PageItems { get; set; }

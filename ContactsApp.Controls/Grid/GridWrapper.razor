@@ -1,0 +1,27 @@
+﻿<CascadingValue Value="this">
+    @ChildContent
+</CascadingValue>
+@code {
+    /// <summary>
+    /// Contained controls.
+    /// </summary>
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    /// <summary>
+    /// Id of item requested for delete.
+    /// </summary>
+    public int DeleteRequestId { get; set; }
+
+    /// <summary>
+    /// Notify on filter changes.
+    /// </summary>
+    [Parameter]
+    public EventCallback FilterChanged { get; set; }
+
+    /// <summary>
+    /// Delete requested.
+    /// </summary>
+    [Parameter]
+    public EventCallback<int> DeleteRequested { get; set; }
+}

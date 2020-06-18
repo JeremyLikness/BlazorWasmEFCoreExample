@@ -1,43 +1,69 @@
-﻿@using ContactsApp.BaseRepository; 
+﻿@using ContactsApp.BaseRepository;
 @using ContactsApp.Model;
-@using System.Security.Claims; 
+@using System.Security.Claims;
 
 @inject ClaimsPrincipal User
 @inject IBasicRepository<Contact> Repo
 @inject NavigationManager Nav
-
-@inherits GridControlsBase
+@inject IContactFilters Filters
+@inject GridQueryAdapter QueryAdapter
 
 <h1>Contacts</h1>
-
-<NameToggle />
-<TextFilter />
-<br />
-<Pager NavigateToPage="@((page)=>NavigateTo(page))" />
-@if (Contacts == null)
-{
-    <div class="alert alert-info">Loading ...</div>
-}
-else
-{
-    @if (Contacts.Count == 0)
-    {
-        <div class="alert alert-warning">No contacts found.</div>
-    }
-    else
-    {
-        <ContactList Contacts="@Contacts" DeleteContact="DeleteContactAsync" />
-    }
-}
+<GridWrapper @ref="Wrapper"
+             FilterChanged="async () => await ReloadAsync()"
+             DeleteRequested="id => Wrapper.DeleteRequestId = id">
+    <div class="container-fluid contacts-grid">
+        <div class="row">
+            <div class="col-12 col-sm-4 col-md-2 p-1">
+                <NameToggle />
+            </div>
+            <div class="col-12 col-sm-4 col-md-8 p-1">
+                <TextFilter />
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+        <Pager/>
+        <div class="row">&nbsp;</div>
+        <ContactListHeader />
+        @if (Filters.Loading || Contacts == null)
+        {
+            <div class="row">
+                <div class="col-12 alert alert-info">
+                    Loading ...
+                </div>
+            </div>
+        }
+        @if (Contacts != null && Contacts.Count == 0)
+        {
+            <div class="row">
+                <div class="col-12 alert alert-warning">
+                    No contacts found.
+                </div>
+            </div>
+        }
+        @if (Contacts != null && Contacts.Count > 0)
+        {
+            @foreach (var contact in Contacts)
+            {
+                <ContactListRow CurrentContact="@contact"
+                                DeleteContact="@(async c => await DeleteContactAsync(c))" />
+            }
+        }
+    </div>
+</GridWrapper>
 
 @code {
+    /// <summary>
+    /// Reference to the wrapper
+    /// </summary>
+    public GridWrapper Wrapper { get; set; }
+
     /// <summary>
     /// The <see cref="ICollection{Contact}"/> to expose on the page.
     /// </summary>
     public ICollection<Contact> Contacts { get; set; }
 
-    private bool _loaded; // track loading: page change or grid controls
-    private int _lastPage;
+    private int _lastPage = -1;
 
     /// <summary>
     /// Allow route-based navigation.
@@ -45,10 +71,10 @@ else
     [Parameter]
     public int Page
     {
-        get => Controls.PageHelper.Page;
+        get => Filters.PageHelper.Page;
         set
         {
-            Controls.PageHelper.Page = value;
+            Filters.PageHelper.Page = value;
         }
     }
 
@@ -57,20 +83,37 @@ else
     /// appropriately on client vs. server.
     /// </summary>
     [Parameter]
-    public Func<IBasicRepository<Contact>, Action<ICollection<Contact>>, Task> FetchControlsAsync { get; set; }
+    public Func<IBasicRepository<Contact>, Action<ICollection<Contact>>, Task> FetchContactsAsync { get; set; }
 
     /// <summary>
     /// Initial load.
     /// </summary>
     /// <param name="firstRender"><c>True</c> on first render.</param>
     /// <returns>A <see cref="Task"/>.</returns>
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnAfterRender(bool firstRender)
     {
-        if (firstRender)
+        if (_lastPage < 1)
         {
-            await ReloadAsync();
+            Nav.NavigateTo("/1");
+            return;
         }
-        await base.OnAfterRenderAsync(firstRender);
+
+        if (Filters.PageHelper.PageCount > 0)
+        {
+            if (Page < 1)
+            {
+                Nav.NavigateTo("/1");
+                return;
+            }
+
+            if (Page > Filters.PageHelper.PageCount)
+            {
+                Nav.NavigateTo($"/{Filters.PageHelper.PageCount}");
+                return;
+            }
+        }
+
+        base.OnAfterRender(firstRender);
     }
 
     /// <summary>
@@ -82,7 +125,7 @@ else
         if (Page != _lastPage)
         {
             _lastPage = Page;
-            _loaded = false;
+
             // refresh based on new page
             await ReloadAsync();
         }
@@ -96,48 +139,22 @@ else
     private async Task ReloadAsync()
     {
         // already in progress, don't duplicate
-        if (Controls.Loading)
+        if (Filters.Loading || Page < 1)
         {
             return;
         }
 
-        // bad page, get on the right page
-        if (Page < 1)
-        {
-            NavigateTo(1);
-            return;
-        }
+        Filters.Loading = true;
 
-        // bad page, pop to top
-        if (Page > Controls.PageHelper.PageCount && Controls.PageHelper.PageCount > 0)
+        if (Wrapper != null)
         {
-            NavigateTo(Controls.PageHelper.PageCount);
-            return;
-        }
-
-        if (_loaded)
-        {
-            return;
+            Wrapper.DeleteRequestId = 0;
         }
 
         Contacts = null;
+        await FetchContactsAsync(Repo, contacts => Contacts = contacts);
 
-        // destroy row controls
-        await InvokeAsync(() => StateHasChanged());
-
-        // notify that we're doing work
-        Controls.Loading = true;
-
-        // get total count
-        await FetchControlsAsync(Repo, result => Contacts = result);
-        
-        // now we're done
-        Controls.Loading = false;
-
-        _loaded = true;
-
-        // let Blazor know we've got updates
-        await InvokeAsync(() => StateHasChanged());
+        Filters.Loading = false;
     }
 
     /// <summary>
@@ -147,48 +164,9 @@ else
     /// <returns>A <see cref="Task"/>.</returns>
     public async Task DeleteContactAsync(Contact contact)
     {
-        Controls.Loading = true;
+        Filters.Loading = true;
         await Repo.DeleteAsync(contact.Id, User);
-        Controls.Loading = false;
-        _loaded = false;
-        await ReloadAsync();
-    }
-
-    /// <summary>
-    /// Take me to a page.
-    /// </summary>
-    /// <param name="page">The page I'm interested in.</param>
-    public void NavigateTo(int page)
-    {
-        Nav.NavigateTo($"/{page}");
-    }
-
-    /// <summary>
-    /// Suppress base class "state has changed".
-    /// </summary>
-    protected override Predicate<string> PropertyFilter => str => false;
-
-    /// <summary>
-    /// Re-evalute when the controls are updated.
-    /// </summary>
-    /// <param name="sender">The <see cref="GridControls"/> instance.</param>
-    /// <param name="e">The property that changed.</param>
-    protected override async Task OnGridChangedAsync(string property)
-    {
-        if (property == nameof(Controls.Loading))
-        {
-            return;
-        }
-
-        // reset to beginning. The filter will run (pages may have changed, etc.)
-        if (Page != 1)
-        {
-            NavigateTo(1);
-            return;
-        }
-
-        _loaded = false;
-        // just refresh
+        Filters.Loading = false;
         await ReloadAsync();
     }
 }

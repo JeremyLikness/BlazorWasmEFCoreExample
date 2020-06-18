@@ -28,6 +28,11 @@ namespace ContactsApp.Server.Controllers
         public string FilterText { get; set; }
 
         /// <summary>
+        /// Loading indicator.
+        /// </summary>
+        public bool Loading { get; set; }
+
+        /// <summary>
         /// Paging state.
         /// </summary>
         public PageHelper PageHelper { get; set; }

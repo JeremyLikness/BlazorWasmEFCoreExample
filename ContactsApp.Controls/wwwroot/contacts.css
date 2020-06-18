@@ -183,17 +183,26 @@ app {
         border-collapse: collapse;
     }
 
-    th, td {
-        border: 1px solid black;
-        padding: 5px;
+    div.contacts-grid {
+        max-width: 80em;
+        float: left;
     }
 
-        th:hover {
-            background: lightgreen;
-            cursor: pointer;
+    div.contact-header {
+        font-weight: bold;
+    }
+
+        th, td, div.contact-header > div, div.contact-detail > div {
+            border: 1px solid black;
+            padding: 5px;
         }
 
-    tr:hover {
+            th:hover, div.contact-header:hover {
+                background: lightgreen;
+                cursor: pointer;
+            }
+
+    tr:hover, div.contact-detail:hover {
         background: lightgray;
     }
 

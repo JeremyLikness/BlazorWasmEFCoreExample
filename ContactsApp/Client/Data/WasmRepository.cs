@@ -18,7 +18,7 @@ namespace ContactsApp.Client.Data
     public class WasmRepository : IBasicRepository<Contact>
     {
         private readonly HttpClient _apiClient;
-        private readonly GridControls _controls;
+        private readonly IContactFilters _controls;
 
         private const string ApiPrefix = "/api/";
         private string ApiContacts => $"{ApiPrefix}contacts/";
@@ -62,8 +62,8 @@ namespace ContactsApp.Client.Data
         /// Creates a new instance of the <see cref="WasmRepository"/>.
         /// </summary>
         /// <param name="clientFactory">The <see cref="IHttpClientFactory"/> for communication with the server.</param>
-        /// <param name="controls">The <see cref="GridControls"/> to parse queries and filters.</param>
-        public WasmRepository(IHttpClientFactory clientFactory, GridControls controls)
+        /// <param name="controls">The <see cref="ContactFilters"/> to parse queries and filters.</param>
+        public WasmRepository(IHttpClientFactory clientFactory, IContactFilters controls)
         {
             _apiClient = clientFactory.CreateClient(Program.BaseClient);
             _controls = controls;
@@ -211,7 +211,7 @@ namespace ContactsApp.Client.Data
         /// <returns>A <see cref="Task"/>.</returns>
         public Task QueryAsync(Func<IQueryable<Contact>, Task> query)
         {
-            throw new NotImplementedException();
+            return GetListAsync();
         }
 
         /// <summary>

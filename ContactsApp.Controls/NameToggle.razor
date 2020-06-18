@@ -1,18 +1,30 @@
-﻿@inherits GridControlsBase 
+﻿@using ContactsApp.Model
 
-@if (Controls.ShowFirstNameFirst)
-{
-    <button class="btn btn-primary" @onclick="()=>Controls.ShowFirstNameFirst=false">Show Last Name, First Name</button>
-}
-else
-{
-    <button class="btn btn-primary" @onclick="()=>Controls.ShowFirstNameFirst=true">Show First Name, Last Name</button>
-}
+@inject IContactFilters Filters
+
+<button class="btn btn-primary" @onclick="async ()=>await ToggleAsync()">Show Last Name, First Name</button>
 &nbsp;
 @code {
     /// <summary>
-    /// Only interested in events that change name order.
+    /// The grid wrapper.
     /// </summary>
-    protected override Predicate<string> PropertyFilter =>
-        str => str == nameof(Controls.ShowFirstNameFirst);
+    [CascadingParameter]
+    public GridWrapper Wrapper { get; set; }
+
+    /// <summary>
+    /// Text to show to swap name preference.
+    /// </summary>
+    public string ButtonText => Filters.ShowFirstNameFirst ?
+        "Show Last Name, First Name" :
+        "Show First Name, Last Name";
+
+    /// <summary>
+    /// Toggle the value
+    /// </summary>
+    /// <returns>A <see cref="Task"/></returns>
+    public Task ToggleAsync()
+    {
+        Filters.ShowFirstNameFirst = !Filters.ShowFirstNameFirst;
+        return Wrapper.FilterChanged.InvokeAsync(this);
+    }
 }

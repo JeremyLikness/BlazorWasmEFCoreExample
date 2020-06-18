@@ -1,16 +1,36 @@
-﻿@inject GridControls Controls
+﻿@using ContactsApp.Model;
 
-<p>Page @Controls.PageHelper.Page of @Controls.PageHelper.PageCount: showing @Controls.PageHelper.PageItems of 
-    @Controls.PageHelper.TotalItemCount items. 
-    <button disabled="@(Controls.Loading || Controls.PageHelper.Page < 2)" class="btn btn-primary" 
-            @onclick="()=>NavigateToPage(Controls.PageHelper.Page-1)">Previous</button>
-    <button disabled="@(Controls.Loading || Controls.PageHelper.Page >= Controls.PageHelper.PageCount)" class="btn btn-primary" 
-            @onclick="()=>NavigateToPage(Controls.PageHelper.Page+1)">Next</button>
-</p>
+@inject IPageHelper PageHelper
+@inject IContactFilters Filters
+
+<div class="row">
+    <div class="col-12 col-sm-4 col-md-3 p-1">
+        Page @PageHelper.Page of @PageHelper.PageCount: showing @PageHelper.PageItems of
+        @PageHelper.TotalItemCount items.
+    </div>
+    <div class="col-12 col-sm-8 col-md-9 p-1">
+        <a disabled="@(Filters.Loading || !PageHelper.HasPrev)" class="btn btn-primary @Disabled(PageHelper.HasPrev)"
+            href="/@PageHelper.PrevPage">
+            Previous
+        </a>
+        <a disabled="@(Filters.Loading || !PageHelper.HasNext)" class="btn btn-primary @Disabled(PageHelper.HasNext)"
+            href="/@PageHelper.NextPage">
+            Next
+        </a>
+    </div>
+</div>
+
 @code {
     /// <summary>
-    /// Delegate for navigation to a specific page.
+    /// This will force refresh on changes.
     /// </summary>
-    [Parameter]
-    public Action<int> NavigateToPage { get; set; }
+    [CascadingParameter]
+    public GridWrapper Wrapper { get; set; }
+
+    /// <summary>
+    /// Emit the disabled class as needed.
+    /// </summary>
+    /// <param name="flag">The flag to test.</param>
+    /// <returns>"disabled" or empty string.</returns>
+    public string Disabled(bool flag) => Filters.Loading || !flag ? "disabled" : string.Empty;
 }

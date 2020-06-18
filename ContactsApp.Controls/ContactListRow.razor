@@ -1,51 +1,91 @@
-﻿@inherits GridControlsBase
+﻿@using ContactsApp.Model;
 
-@using ContactsApp.Model;
-
-@inject NavigationManager Nav
+@inject IContactFilters Filters
 
 @if (CurrentContact != null)
 {
-    <tr>
-        <td><span title="Edit" class="clickable" @onclick="Edit">&nbsp;📝&nbsp;</span>
-        @if (CanDelete)
-        {
-        <span @onclick="async () => await DeleteRequestAsync()" title="Delete" class="clickable red">❌</span>
-        }
-        else
-        {
-            <span>&nbsp;</span>
-        }
-        &nbsp;</td>
-        <td><a href="@ViewLink" alt="View Details" title="View Details">@Name</a></td>
+    <div class="row contact-detail">
+        <div class="@Columns.EditColumn text-right">
+            <a title="Edit" href="/edit/@CurrentContact?.Id">
+                &nbsp;📝&nbsp;
+            </a>
+            @if (CanDelete)
+            {
+                <span @onclick="async () => await DeleteRequestAsync()" title="Delete"
+                      class="d-none d-sm-inline clickable red">
+                    ❌
+                </span>
+            }
+            else
+            {
+                <span>&nbsp;</span>
+            }
+            &nbsp;
+        </div>
+        <div class="@Columns.GetClassForColumn(ContactFilterColumns.Name)">
+            <a href="@ViewLink" alt="View Details" title="View Details">
+                @Name
+            </a>
+        </div>
         @if (!DeleteConfirmation)
         {
-            <td>@CurrentContact.Phone</td>
-            <td>@CurrentContact.Street</td>
-            <td>@CurrentContact.City</td>
-            <td>@CurrentContact.State</td>
-            <td>@CurrentContact.ZipCode</td>
+            <div class="@Columns.GetClassForColumn(ContactFilterColumns.Phone)">
+                @CurrentContact.Phone
+            </div>
+            <div class="@Columns.GetClassForColumn(ContactFilterColumns.Street)">
+                @CurrentContact.Street
+            </div>
+            <div class="@Columns.GetClassForColumn(ContactFilterColumns.City)">
+                @CurrentContact.City
+            </div>
+            <div class="@Columns.GetClassForColumn(ContactFilterColumns.State)">
+                @CurrentContact.State
+            </div>
+            <div class="@Columns.GetClassForColumn(ContactFilterColumns.ZipCode)">
+                @CurrentContact.ZipCode
+            </div>
         }
         else
         {
-            <td colspan="5">
-                <DeletePrompt Confirmation="@(async result => await ConfirmAsync(result))" />
-            </td>
+            <div class="@Columns.DeleteConfirmation">
+                <DeletePrompt Confirmation="ConfirmAsync" />
+            </div>
         }
-    </tr>
+    </div>
 }
 @code {
+    /// <summary>
+    /// Internal <see cref="Contact"/> reference.
+    /// </summary>
+    private Contact _currentContact;
+
+    /// <summary>
+    /// Map classes to columns.
+    /// </summary>
+    public ColumnService Columns = new ColumnService();
+
     /// <summary>
     /// The <see cref="Contact"/> being rendered.
     /// </summary>
     [Parameter]
-    public Contact CurrentContact { get; set; }
+    public Contact CurrentContact
+    {
+        get => _currentContact;
+        set
+        {
+            if (value != null && !value.Equals(_currentContact))
+            {
+                _currentContact = value;
+                DeleteConfirmation = false;
+            }
+        }
+    }
 
-    [Parameter]
-    public int DeleteRequestId { get; set; }
-
-    [Parameter]
-    public EventCallback<int> DeleteRequested { get; set; }
+    /// <summary>
+    /// The <see cref="GridWrapper"/> reference.
+    /// </summary>
+    [CascadingParameter]
+    public GridWrapper Wrapper { get; set; }
 
     /// <summary>
     /// Delegate to delete the <see cref="Contact"/>.
@@ -54,7 +94,7 @@
     public EventCallback<Contact> DeleteContact { get; set; }
 
     public bool CanDelete => !DeleteConfirmation &&
-        (DeleteRequestId == 0 || DeleteRequestId == CurrentContact?.Id);
+        (Wrapper.DeleteRequestId == 0 || Wrapper.DeleteRequestId == CurrentContact?.Id);
 
     /// <summary>
     /// Navigation to view.
@@ -62,25 +102,9 @@
     public string ViewLink => $"/View/{CurrentContact?.Id}";
 
     /// <summary>
-    /// We only care to refresh if the ordering of names has changed
-    /// </summary>
-    protected override Predicate<string> PropertyFilter
-    {
-        get => str => str == nameof(Controls.ShowFirstNameFirst);
-    }
-
-    /// <summary>
     /// Confirm the delete.
     /// </summary>
     public bool DeleteConfirmation { get; set; }
-
-    /// <summary>
-    /// Navigate to edit.
-    /// </summary>
-    public void Edit()
-    {
-        Nav.NavigateTo($"/edit/{CurrentContact.Id}");
-    }
 
     /// <summary>
     /// Called based on confirmation.
@@ -96,34 +120,32 @@
         else
         {
             DeleteConfirmation = false;
-            await DeleteRequested.InvokeAsync(0);
+            await Wrapper.DeleteRequested.InvokeAsync(0);
         }
     }
 
     /// <summary>
     /// Set delete to true.
     /// </summary>
-    public async Task DeleteRequestAsync()
+    public Task DeleteRequestAsync()
     {
         DeleteConfirmation = true;
-        await DeleteRequested.InvokeAsync(CurrentContact.Id);
+        return Wrapper.DeleteRequested.InvokeAsync(CurrentContact.Id);
     }
 
     /// <summary>
     /// Deletes the <see cref="Contact"/>.
     /// </summary>
     /// <returns>A <see cref="Task"/>.</returns>
-    private async Task DeleteAsync()
+    private Task DeleteAsync()
     {
-        await DeleteContact.InvokeAsync(CurrentContact);
-        await DeleteRequested.InvokeAsync(0);
-        CurrentContact = null;
+        return DeleteContact.InvokeAsync(CurrentContact);
     }
 
     /// <summary>
     /// Correctly formatted name.
     /// </summary>
-    public string Name => Controls.ShowFirstNameFirst ?
+    public string Name => Filters.ShowFirstNameFirst ?
         $"{CurrentContact?.FirstName} {CurrentContact?.LastName}" :
         $"{CurrentContact?.LastName}, {CurrentContact?.FirstName}";
 }

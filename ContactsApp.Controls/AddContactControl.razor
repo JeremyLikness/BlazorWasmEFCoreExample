@@ -1,15 +1,15 @@
-﻿@using ContactsApp.BaseRepository; 
+﻿@using ContactsApp.BaseRepository;
 @using ContactsApp.Model;
 @using System.Security.Claims;
 
 @inject ClaimsPrincipal User
 @inject IBasicRepository<Contact> Repo
 @inject NavigationManager Nav
-@inject GridControls Controls
+@inject IPageHelper PageHelper
 
 @if (Contact != null)
 {
-    <ContactUpdate Busy="@Busy" Contact="@Contact" IsAdd="true"
+    <ContactForm Busy="@Busy" Contact="@Contact" IsAdd="true"
                    CancelRequest="Cancel"
                    ValidationResult="@(async (success) => await ValidationResultAsync(success))" />
 }
@@ -92,7 +92,6 @@
             ErrorMessage = ex.Message;
             Busy = false;
         }
-        await InvokeAsync(() => StateHasChanged());
     }
 
     /// <summary>
@@ -100,6 +99,6 @@
     /// </summary>
     public void Cancel()
     {
-        Nav.NavigateTo($"/{Controls.PageHelper.Page}");
+        Nav.NavigateTo($"/{PageHelper.Page}");
     }
 }

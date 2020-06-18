@@ -21,6 +21,11 @@
         IPageHelper PageHelper { get; set; }
 
         /// <summary>
+        /// Loading new set of data.
+        /// </summary>
+        bool Loading { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating if the name is rendered first name first.
         /// </summary>
         bool ShowFirstNameFirst { get; set; }

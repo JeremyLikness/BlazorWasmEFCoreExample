@@ -7,7 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
-namespace ContactsApp.DataAccess
+namespace ContactsApp.Controls
 {
     /// <summary>
     /// Creates the right expressions to filter and sort.

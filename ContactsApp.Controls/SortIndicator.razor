@@ -1,16 +1,10 @@
-﻿@inherits GridControlsBase
-@using ContactsApp.Model 
+﻿@using ContactsApp.Model 
 
-@if (Column == Controls.SortColumn)
+@inject IContactFilters Filters
+
+@if (Column == Filters.SortColumn)
 {
-    @if (Controls.SortAscending)
-    {
-        <span>🔼</span>
-    }
-    else
-    {
-        <span>🔽</span>
-    }
+    <span>@Indicator</span>
 }
 else
 {
@@ -24,8 +18,7 @@ else
     public ContactFilterColumns Column { get; set; }
 
     /// <summary>
-    /// Only interested in events that change the state of the sort indicator.
+    /// Show the sort direction.
     /// </summary>
-    protected override Predicate<string> PropertyFilter =>
-        str => str == nameof(Controls.SortColumn) || str == nameof(Controls.SortAscending);
+    public string Indicator => Filters.SortAscending ? "🔼" : "🔽";
 }

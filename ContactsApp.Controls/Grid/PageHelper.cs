@@ -42,5 +42,25 @@ namespace ContactsApp.Controls.Grid
         /// Total number of pages.
         /// </summary>
         public int PageCount => (TotalItemCount + PageSize - 1) / PageSize;
+
+        /// <summary>
+        /// Next page
+        /// </summary>
+        public int NextPage => Page < PageCount ? Page + 1 : Page;
+
+        /// <summary>
+        /// <c>true</c> when paging forward makes sense.
+        /// </summary>
+        public bool HasNext => Page < PageCount;
+
+        /// <summary>
+        /// The previous page.
+        /// </summary>
+        public int PrevPage => Page > 1 ? Page - 1 : Page;
+
+        /// <summary>
+        /// <c>true</c> when a previous page exists.
+        /// </summary>
+        public bool HasPrev => Page > 1;
     }
 }

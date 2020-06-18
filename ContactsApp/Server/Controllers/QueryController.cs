@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using ContactsApp.BaseRepository;
 using System;
 using Microsoft.Extensions.DependencyInjection;
+using ContactsApp.Controls;
 
 namespace ContactsApp.Server.Controllers
 {

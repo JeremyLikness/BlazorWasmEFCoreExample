@@ -1,12 +1,13 @@
 ﻿@implements IDisposable
 
-@using ContactsApp.BaseRepository; 
-@using ContactsApp.Model; 
-@using System.Security.Claims; 
+@using ContactsApp.BaseRepository;
+@using ContactsApp.Model;
+@using System.Security.Claims;
 
 @inject ClaimsPrincipal User
 @inject NavigationManager Nav
-@inject GridControls Controls
+@inject IPageHelper PageHelper
+@inject EditService EditService
 
 @if (!Busy && Contact == null)
 {
@@ -14,7 +15,7 @@
 }
 else
 {
-    <ContactUpdate Busy="@Busy" Contact="@Contact" DbContact="@DbContact" IsAdd="false"
+    <ContactForm Busy="@Busy" Contact="@Contact" DbContact="@DbContact" IsAdd="false"
                    CancelRequest="Cancel"
                    ValidationResult="@(async (success) => await ValidationResultAsync(success))" />
 }
@@ -55,8 +56,6 @@ else
     /// </summary>
     public Contact Contact { get; set; }
 
-    private bool _disposedValue;
-
     /// <summary>
     /// Database version of <see cref="Contact"/> when concurrency issues exist.
     /// </summary>
@@ -88,7 +87,6 @@ else
     /// <returns>A <see cref="Task"/>.</returns>
     protected override async Task OnParametersSetAsync()
     {
-        //Busy = true; // start async
         Contact = await Service.Repo.LoadAsync(ContactId, null, true);
         Busy = false; // end async
 
@@ -125,8 +123,9 @@ else
         try
         {
             await Service.CommitAsync();
+            EditService.Success = true;
             // go to view to see the record
-            Nav.NavigateTo($"/view/{Contact.Id}/true");
+            Nav.NavigateTo($"/view/{Contact.Id}");
         }
         catch (RepoConcurrencyException<Contact> dbex)
         {
@@ -153,7 +152,6 @@ else
             ErrorMessage = ex.Message;
             Busy = false;
         }
-        await InvokeAsync(() => StateHasChanged());
     }
 
     /// <summary>
@@ -162,37 +160,19 @@ else
     public void Cancel()
     {
         Busy = true;
-        Nav.NavigateTo($"/{Controls.PageHelper.Page}");
+        Nav.NavigateTo($"/{PageHelper.Page}");
     }
 
     /// <summary>
     /// Dispose and properly unregister the handler.
     /// </summary>
     /// <param name="disposing"><c>True</c> when disposing.</param>
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            if (disposing)
-            {
-                if (Service != null)
-                {
-                    Service.Dispose();
-                    Service = null;
-                }
-            }
-
-            _disposedValue = true;
-        }
-    }
-
-    /// <summary>
-    /// Dispose pattern.
-    /// </summary>
     public void Dispose()
     {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
+        if (Service != null)
+        {
+            Service.Dispose();
+            Service = null;
+        }
     }
 }

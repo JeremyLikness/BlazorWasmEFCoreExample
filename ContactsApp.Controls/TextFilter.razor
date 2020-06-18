@@ -1,7 +1,9 @@
 ﻿@using System.Timers
-@using ContactsApp.Model 
+@using ContactsApp.Model
 
-@inherits GridControlsBase
+@implements IDisposable
+
+@inject IContactFilters Filters
 
 Filter by:
 <input type="text" autofocus @bind-value="FilterText" @bind-value:event="oninput" />
@@ -15,14 +17,15 @@ Filter on: <select @bind="SelectedColumn">
 
 @code {
     /// <summary>
+    /// The <see cref="GridWrapper"/> reference.
+    /// </summary>
+    [CascadingParameter]
+    public GridWrapper Wrapper { get; set; }
+
+    /// <summary>
     /// Wait period in (ms) after the user stops typing.
     /// </summary>
     const int DebounceMs = 300;
-
-    /// <summary>
-    /// Proper disposal of timers.
-    /// </summary>
-    private bool disposedValue = false;
 
     /// <summary>
     /// Timer for debounce.
@@ -30,21 +33,15 @@ Filter on: <select @bind="SelectedColumn">
     Timer timer;
 
     /// <summary>
-    /// Only interested in filter-related changes.
-    /// </summary>
-    protected override Predicate<string> PropertyFilter =>
-    str => str == nameof(Controls.FilterColumn) || str == nameof(Controls.FilterText);
-
-    /// <summary>
     /// When ready.
     /// </summary>
     protected override void OnInitialized()
     {
         // grab filter
-        filterText = Controls.FilterText;
+        filterText = Filters.FilterText;
 
         // grab column to filter on
-        selectedColumn = (int)(Controls.FilterColumn);
+        selectedColumn = (int)(Filters.FilterColumn);
 
         base.OnInitialized();
     }
@@ -76,8 +73,9 @@ Filter on: <select @bind="SelectedColumn">
             if (value != selectedColumn)
             {
                 selectedColumn = value;
+                Filters.FilterColumn = (ContactFilterColumns)selectedColumn;
                 filterText = string.Empty;
-                Controls.FilterColumn = (ContactFilterColumns)selectedColumn;
+                Wrapper.FilterChanged.InvokeAsync(this);
             }
         }
     }
@@ -112,14 +110,14 @@ Filter on: <select @bind="SelectedColumn">
     /// </summary>
     /// <param name="sender">Timer.</param>
     /// <param name="e">Event args.</param>
-    private void NotifyTimerElapsed(object sender, ElapsedEventArgs e)
+    private async void NotifyTimerElapsed(object sender, ElapsedEventArgs e)
     {
         timer.Dispose();
         timer = null;
-        if (Controls.FilterText != filterText)
+        if (Filters.FilterText != filterText)
         {
-            // notify the controls
-            Controls.FilterText = filterText.Trim();
+            Filters.FilterText = filterText.Trim();
+            await InvokeAsync(async () => await Wrapper.FilterChanged.InvokeAsync(this));
         }
     }
 
@@ -127,20 +125,12 @@ Filter on: <select @bind="SelectedColumn">
     /// Disposable pattern - override to dispose any ticking timers.
     /// </summary>
     /// <param name="disposing"><c>True</c> when disposing.</param>
-    protected override void Dispose(bool disposing)
+    public void Dispose()
     {
-        if (!disposedValue)
+        if (timer != null)
         {
-            if (disposing)
-            {
-                if (timer != null)
-                {
-                    timer.Dispose();
-                    timer = null;
-                }
-                disposedValue = true;
-            }
+            timer.Dispose();
+            timer = null;
         }
-        base.Dispose(disposing);
     }
 }
