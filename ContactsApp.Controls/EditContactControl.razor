@@ -88,11 +88,17 @@ else
     /// <returns>A <see cref="Task"/>.</returns>
     protected override async Task OnParametersSetAsync()
     {
-        Service.SetUser(User);
-        Busy = true; // start async
+        //Busy = true; // start async
         Contact = await Service.Repo.LoadAsync(ContactId, null, true);
         Busy = false; // end async
+
         await base.OnInitializedAsync();
+    }
+
+    public override async Task SetParametersAsync(ParameterView parameters)
+    {
+        Busy = true;
+        await base.SetParametersAsync(parameters);
     }
 
     /// <summary>
