@@ -14,9 +14,9 @@ namespace ContactsApp.Controls.Grid
         private readonly Dictionary<ContactFilterColumns, string> _columnMappings =
             new Dictionary<ContactFilterColumns, string>
             {
-                { ContactFilterColumns.City, "d-none d-sm-block col-lg-2 col-sm-3"},
+                { ContactFilterColumns.City, "d-none d-sm-block col-lg-1 col-sm-3"},
                 { ContactFilterColumns.Name, "col-8 col-lg-2 col-sm-3" },
-                { ContactFilterColumns.Phone, "d-none d-sm-block col-lg-1 col-sm-2" },
+                { ContactFilterColumns.Phone, "d-none d-sm-block col-lg-2 col-sm-2" },
                 { ContactFilterColumns.State, "d-none d-sm-block col-sm-1" },
                 { ContactFilterColumns.Street, "d-none d-lg-block col-lg-3" },
                 { ContactFilterColumns.ZipCode, "d-none d-sm-block col-sm-2" }

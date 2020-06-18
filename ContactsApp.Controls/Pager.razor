@@ -4,11 +4,11 @@
 @inject IContactFilters Filters
 
 <div class="row">
-    <div class="col-12 col-sm-4 col-md-3 p-1">
+    <div class="col-12 col-sm-6 col-lg-4 col-xl-3 p-1">
         Page @PageHelper.Page of @PageHelper.PageCount: showing @PageHelper.PageItems of
         @PageHelper.TotalItemCount items.
     </div>
-    <div class="col-12 col-sm-8 col-md-9 p-1">
+    <div class="col-12 col-sm-6 col-lg-8 col-xl-9 p-1">
         <a disabled="@(Filters.Loading || !PageHelper.HasPrev)" class="btn btn-primary @Disabled(PageHelper.HasPrev)"
             href="/@PageHelper.PrevPage">
             Previous
