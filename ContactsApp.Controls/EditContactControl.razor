@@ -11,7 +11,7 @@
 
 @if (!Busy && Contact == null)
 {
-    <p>Could not find contact with id @ContactId.</p>
+    <div class="alert alert-warning">Could not find contact with id <span>@ContactId</span>.</div>
 }
 else
 {
