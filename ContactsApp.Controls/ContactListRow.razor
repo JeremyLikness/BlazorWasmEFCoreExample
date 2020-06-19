@@ -55,11 +55,6 @@
 }
 @code {
     /// <summary>
-    /// Internal <see cref="Contact"/> reference.
-    /// </summary>
-    private Contact _currentContact;
-
-    /// <summary>
     /// Map classes to columns.
     /// </summary>
     public ColumnService Columns = new ColumnService();
@@ -68,18 +63,7 @@
     /// The <see cref="Contact"/> being rendered.
     /// </summary>
     [Parameter]
-    public Contact CurrentContact
-    {
-        get => _currentContact;
-        set
-        {
-            if (value != null && !value.Equals(_currentContact))
-            {
-                _currentContact = value;
-                DeleteConfirmation = false;
-            }
-        }
-    }
+    public Contact CurrentContact { get; set; }
 
     /// <summary>
     /// The <see cref="GridWrapper"/> reference.
@@ -105,6 +89,24 @@
     /// Confirm the delete.
     /// </summary>
     public bool DeleteConfirmation { get; set; }
+
+    /// <summary>
+    /// Track changes
+    /// </summary>
+    private int _lastContact = -1;
+
+    /// <summary>
+    /// Reset when new contact is attached
+    /// </summary>
+    protected override void OnParametersSet()
+    {
+        if (CurrentContact != null && CurrentContact.Id != _lastContact)
+        {
+            _lastContact = CurrentContact.Id;
+            DeleteConfirmation = false;
+        }
+        base.OnParametersSet();
+    }
 
     /// <summary>
     /// Called based on confirmation.
