@@ -11,6 +11,10 @@ I created this series of blog posts to explain the project in detail (note: seri
 - [Build a Blazor WebAssembly Line of Business App Part 2: Client and Server](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app-part-2/)
 - [Build a Blazor WebAssembly Line of Business App Part 3: Query, Delete and Concurrency](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app-part-3/)
 
+For the latest version, read about the latest round of refactoring here:
+
+- [Build a Blazor WebAssembly LOB App Part 4: Make it Blazor-Friendly](https://blog.jeremylikness.com/blog/build-a-blazor-webassembly-line-of-business-app-part-4/)
+
 ## Thank you
 
 🙏 Thanks to [John Barrett](https://github.com/274188A) for helping identify initial issues.
