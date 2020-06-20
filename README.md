@@ -4,6 +4,8 @@
 
 Example of a Blazor WebAssembly project that uses Entity Framework Core on the server for data access.
 
+> Do you prefer Blazor Server instead? No problem! The same project is implemented for server [here](https://github.com/JeremyLikness/BlazorServerEFCoreExample).
+
 I created this series of blog posts to explain the project in detail (note: series is valid up to commit 
 [e6ac27b](https://github.com/JeremyLikness/BlazorWasmEFCoreExample/commit/e6ac27b5b2b2c1d40406aa34e8884ec8b0e5808a)):
 
