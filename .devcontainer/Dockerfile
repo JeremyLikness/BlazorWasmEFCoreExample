@@ -23,6 +23,8 @@ ARG INSTALL_AZURE_CLI="true"
 # Install dotnet-ef global tool
 RUN dotnet tool install --global dotnet-ef
 
+ENV PATH="/root/.dotnet/tools:${PATH}"
+
 # Configure apt and install packages
 RUN apt-get update \
     && export DEBIAN_FRONTEND=noninteractive \
