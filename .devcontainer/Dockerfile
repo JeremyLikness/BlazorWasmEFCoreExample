@@ -13,12 +13,15 @@ ARG USER_UID=1000
 ARG USER_GID=$USER_UID
 
 # [Optional] Version of Node.js to install.
-ARG INSTALL_NODE="true"
+ARG INSTALL_NODE="false"
 ARG NODE_VERSION="lts/*"
 ENV NVM_DIR=/usr/local/share/nvm
 
 # [Optional] Install the Azure CLI
-ARG INSTALL_AZURE_CLI="false"
+ARG INSTALL_AZURE_CLI="true"
+
+# Install dotnet-ef global tool
+RUN dotnet tool install --global dotnet-ef
 
 # Configure apt and install packages
 RUN apt-get update \
