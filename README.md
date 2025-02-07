@@ -1,5 +1,7 @@
 # BlazorWasmEFCoreExample
 
+> **ARCHIVED 2025-02-06**
+
 ![Image of data grid](./blazorcontactsapp.jpg)
 
 Example of a Blazor WebAssembly project that uses Entity Framework Core on the server for data access.
